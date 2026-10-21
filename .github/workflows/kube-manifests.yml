@@ -1,0 +1,41 @@
+# Catch broken YAML before Argo CD does: render every Kustomize tree and
+# validate it against Kubernetes + CRD JSON schemas.
+name: Validate manifests
+
+on:
+  pull_request:
+    paths: &paths
+      - kube-lab/project-1-gitea/k8s/**
+      - kube-lab/project-2-shipit/deploy/**
+      - kube-lab/platform/**
+      - kube-lab/argocd/**
+      - .github/workflows/kube-manifests.yml
+  push:
+    branches: [main]
+    paths: *paths
+
+permissions:
+  contents: read
+
+jobs:
+  kubeconform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C /usr/local/bin kubeconform
+      - name: Render and validate
+        working-directory: kube-lab
+        run: |
+          set -o pipefail
+          crds='https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          for dir in project-1-gitea/k8s platform/gateway project-2-shipit/deploy/overlays/*; do
+            echo "::group::$dir"
+            kubectl kustomize "$dir" | kubeconform -strict -summary \
+              -schema-location default -schema-location "$crds" -ignore-missing-schemas
+            echo "::endgroup::"
+          done
+          kubeconform -strict -summary -schema-location default -schema-location "$crds" \
+            -ignore-missing-schemas argocd/

@@ -1,0 +1,33 @@
+# Environment: prod — http://shipit.localhost:8080
+# Tags change ONLY through a reviewed PR opened by the "ShipIt promote"
+# workflow: promotion = merging a Git change.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shipit-prod
+resources:
+  - ../../base
+components:
+  - ../../components/monitoring
+images:
+  - name: ghcr.io/msaouab/shipit-api
+    newTag: sha-pending
+  - name: ghcr.io/msaouab/shipit-worker
+    newTag: sha-pending
+patches:
+  - target: { kind: HTTPRoute, name: api }
+    patch: |
+      - op: replace
+        path: /spec/hostnames/0
+        value: shipit.localhost
+  # Two Postgres instances: a primary and a streaming replica.
+  # Kill the primary pod and watch CNPG promote the replica.
+  - target: { kind: Cluster, name: shipit-db }
+    patch: |
+      - op: replace
+        path: /spec/instances
+        value: 2
+  - target: { kind: Deployment, name: worker }
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2

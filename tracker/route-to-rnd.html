@@ -1,0 +1,595 @@
+<title>Route to R&amp;D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a transit-line route of stops on the left, the selected stop's checklist on the right, an application tracker below. */
+:root {
+  --bg: #f3f5f3;
+  --surface: #ffffff;
+  --ink: #17201d;
+  --muted: #5b6863;
+  --line: #d9e0dc;
+  --accent: #0f6b5c;
+  --accent-soft: #dcefe9;
+  --signal: #c47a12;
+  --signal-soft: #fbeed8;
+  --done: #2f8a4e;
+  --danger: #b4412f;
+  --f-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1412; --surface: #151d1a; --ink: #e4ebe8; --muted: #93a29c; --line: #26322e;
+    --accent: #52c3aa; --accent-soft: #173a33; --signal: #f0a63a; --signal-soft: #3a2a12;
+    --done: #5cc27e; --danger: #e57a66; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1412; --surface: #151d1a; --ink: #e4ebe8; --muted: #93a29c; --line: #26322e;
+  --accent: #52c3aa; --accent-soft: #173a33; --signal: #f0a63a; --signal-soft: #3a2a12;
+  --done: #5cc27e; --danger: #e57a66; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.label { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* Header */
+header { display: grid; gap: 18px; }
+.head-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px; }
+h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 700; letter-spacing: -.01em; }
+h1 .via { color: var(--accent); }
+.sub { color: var(--muted); max-width: 62ch; margin: 6px 0 0; }
+.meter { display: grid; gap: 6px; min-width: 220px; }
+.meter-bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.meter-bar span { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s ease; }
+.meter-num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+.next { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 16px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; }
+.next strong { font-family: var(--f-display); font-size: 17px; }
+.sync { margin-left: auto; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+
+/* Route + detail */
+.board { display: grid; grid-template-columns: minmax(250px, 320px) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 820px) { .board { grid-template-columns: 1fr; } }
+nav.route { display: grid; gap: 18px; }
+.phase h2 { font-size: 13px; font-family: var(--f-mono); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.stops { list-style: none; margin: 0; padding: 0; position: relative; }
+.stops::before { content: ""; position: absolute; left: 11px; top: 14px; bottom: 14px; width: 3px; background: var(--line); border-radius: 2px; }
+.stop { position: relative; }
+.stop button { width: 100%; text-align: left; background: none; border: 0; padding: 8px 10px 8px 34px; border-radius: 8px; cursor: pointer; display: grid; gap: 1px; }
+.stop button:hover { background: var(--surface); }
+.stop.sel button { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+.dot { position: absolute; left: 4px; top: 13px; width: 17px; height: 17px; border-radius: 50%; background: var(--bg); border: 3px solid var(--line); }
+.stop.done .dot { background: var(--done); border-color: var(--done); }
+.stop.current .dot { border-color: var(--signal); background: var(--signal-soft); box-shadow: 0 0 0 4px var(--signal-soft); }
+.stop.partial .dot { border-color: var(--accent); }
+.stop-title { font-weight: 600; font-size: 14.5px; }
+.stop-meta { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stop.done .stop-title { color: var(--muted); }
+
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: grid; gap: 20px; min-width: 0; }
+.detail-head { display: grid; gap: 6px; }
+.detail h3 { font-size: 26px; }
+.why { color: var(--muted); max-width: 66ch; margin: 0; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 11.5px; padding: 3px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); width: fit-content; }
+.pill.cur { background: var(--signal-soft); color: var(--signal); }
+.pill.ok { background: var(--accent-soft); color: var(--done); }
+.tasks { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.tasks label { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding: 8px 6px; border-radius: 6px; cursor: pointer; align-items: start; }
+.tasks label:hover { background: var(--bg); }
+.tasks input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--accent); }
+.tasks input:checked + span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.box { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.res { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.res a { text-decoration: none; border-bottom: 1px solid var(--line); }
+.res a:hover { border-color: var(--accent); }
+.prompt { font-family: var(--f-mono); font-size: 13px; background: var(--bg); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; user-select: all; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13.5px; width: fit-content; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; }
+textarea { width: 100%; min-height: 110px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--bg); line-height: 1.5; }
+.note-state { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); }
+.caution { font-size: 13.5px; color: var(--muted); border-left: 3px solid var(--signal); padding-left: 10px; margin: 0; }
+
+/* Applications */
+section.apps { display: grid; gap: 14px; }
+.apps-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; }
+.apps-head h2 { font-size: 24px; }
+form.add { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; align-items: end; }
+form.add label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+form.add input, form.add select, .app select, .app input { border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; background: var(--bg); min-width: 0; width: 100%; }
+.app-list { display: grid; gap: 10px; }
+.app { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 12px; }
+.app-top { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+.app-top strong { font-family: var(--f-display); font-size: 18px; }
+.app-top .stop-meta { flex: 1; }
+.track { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.track span { height: 6px; border-radius: 3px; background: var(--line); }
+.track span.on { background: var(--accent); }
+.track.rej span.on { background: var(--danger); }
+.track-labels { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; font-family: var(--f-mono); font-size: 10.5px; color: var(--muted); }
+.track-labels span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.app-fields label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); }
+.app-fields .wide { grid-column: 1 / -1; }
+.empty { border: 1px dashed var(--line); border-radius: 12px; padding: 20px; color: var(--muted); }
+.del { color: var(--danger); background: none; border: 0; cursor: pointer; font-size: 13px; padding: 0; }
+.confirm { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="head-row">
+      <div>
+        <div class="label">Mohamed Saouab · Full-stack / Software Developer</div>
+        <h1>Ben Guerir <span class="via">→</span> R&amp;D, Belgium</h1>
+        <p class="sub">Every stop between today and your first day: prepare yourself for each interview round, get your profile ready, apply, track the process, then get the work permit, the visa and move.</p>
+      </div>
+      <div class="meter">
+        <div class="label">Route progress</div>
+        <div class="meter-bar"><span id="meterFill"></span></div>
+        <div class="meter-num" id="meterNum">0 of 0 tasks</div>
+      </div>
+    </div>
+    <div class="next">
+      <span class="label">Next stop</span>
+      <strong id="nextTitle">Loading…</strong>
+      <span class="stop-meta" id="nextMeta"></span>
+      <button class="btn" id="goNext" type="button">Open</button>
+      <span class="sync" id="sync">Saved on this device</span>
+    </div>
+  </header>
+
+  <div class="board">
+    <nav class="route" id="route" aria-label="Route stops"></nav>
+    <article class="detail" id="detail" aria-live="polite"></article>
+  </div>
+
+  <section class="apps" id="apps">
+    <div class="apps-head">
+      <div>
+        <div class="label">Stop D · Tracking</div>
+        <h2>Applications</h2>
+      </div>
+      <span class="stop-meta">Move each application along as you pass a round.</span>
+    </div>
+    <form class="add" id="addForm">
+      <label>Role<input id="fRole" required placeholder="Software Developer"></label>
+      <label>Office<input id="fOffice" placeholder="Louvain-la-Neuve"></label>
+      <label>Applied on<input id="fDate" type="date"></label>
+      <button class="btn primary" type="submit">Add application</button>
+    </form>
+    <div class="app-list" id="appList"></div>
+  </section>
+</div>
+
+<script>
+const START = "2026-10-13";
+const ROUNDS = ["Applied", "Online test", "HR screen", "Technical", "Final", "Offer"];
+
+const PHASES = [
+  { id: "A", title: "A · Prepare yourself for each round", steps: [
+    { id: "A1", title: "Python fluency", when: "Weeks 1–2 · Oct 13–26",
+      why: "Your experience is mostly TypeScript, but the target backend and most of its tests use Python. You need to write it as fast as you write TS.",
+      tasks: [
+        "Idioms: comprehensions, slicing, unpacking, enumerate/zip, sorted with key",
+        "Standard library: collections (Counter, defaultdict, deque), heapq, itertools, bisect",
+        "OOP: classes, inheritance, super(), decorators, generators (Python ERP ORMs use all of them)",
+        "Rewrite 10 problems you already solved in TypeScript in Python",
+        "Format with ruff or black; read PEP 8 once"
+      ],
+      resources: [{ label: "Python tutorial (official)", url: "https://docs.python.org/3/tutorial/" }],
+      prompt: "Give me 5 short Python drills on collections and comprehensions, then review my answers" },
+    { id: "A2", title: "Round 1: Online coding test", when: "Weeks 1–4 · daily",
+      why: "Timed, about 1 hour. Reported questions are LeetCode-style plus SQL, arrays and graphs. Most candidates say time is the hardest part.",
+      tasks: [
+        "Arrays & hashing, two pointers, sliding window: 15 problems",
+        "Stack, binary search, linked list: 10 problems",
+        "Trees and graphs: BFS, DFS, topological sort: 12 problems",
+        "Heap, intervals, simple dynamic programming: 8 problems",
+        "SQL: joins, GROUP BY / HAVING, subqueries, window functions (SQL 50)",
+        "3 timed mocks in Python: 3 problems in 60 minutes"
+      ],
+      resources: [
+        { label: "NeetCode practice list", url: "https://neetcode.io/practice" },
+        { label: "LeetCode Top SQL 50", url: "https://leetcode.com/studyplan/top-sql-50/" }
+      ],
+      prompt: "Give me a timed online test in the reported format: 2 algorithm problems and 1 SQL problem in 60 minutes" },
+    { id: "A3", title: "ERP framework (your differentiator)", when: "Weeks 2–4",
+      why: "Few candidates arrive already knowing the framework's ORM and frontend. Building a real module proves you can ship on day one.",
+      tasks: [
+        "Run the open-source ERP locally with Docker and PostgreSQL",
+        "Complete Server Framework 101 (Real Estate module)",
+        "Discover the web framework, chapter 1: OWL components",
+        "Discover the web framework, chapter 2: build a dashboard",
+        "ORM basics: search, browse, create, write, computed fields, onchange, domains",
+        "Build your own module (Python model + OWL widget, e.g. a bus-route tracker) and push it to GitHub"
+      ],
+      resources: [],
+      prompt: "Quiz me on the ERP framework's ORM and frontend, 10 questions, one at a time" },
+    { id: "A4", title: "Round 2: HR screen", when: "Week 3",
+      why: "15–20 minutes and usually friendly. They check motivation, English, availability and whether relocation will work.",
+      tasks: [
+        "60-second “about me”: 1337, Veltiston AI, the paratransit platform you built end to end",
+        "“Why this company?” with specifics: open-source product, many apps on one framework, Python + a modern frontend stack",
+        "Relocation answer: ready to move to Belgium, earliest start date, you will need a work permit",
+        "Research the salary range for the role and office and pick your number",
+        "3 questions for them: team, onboarding, what success looks like in 6 months",
+        "Rehearse once in English and once in French"
+      ],
+      resources: [],
+      prompt: "Run a mock HR screen with me in English, then give me feedback" },
+    { id: "A5", title: "Round 3: Technical interview", when: "Weeks 3–4",
+      why: "The hardest round. Reported formats: easy and medium coding problems, schema design, SQL, git questions and a deep dive into your past projects.",
+      tasks: [
+        "4 live problems, talking out loud: clarify, plan, code, test",
+        "Schema design: invoicing (customers, invoices, invoice lines, taxes) with keys and constraints",
+        "Schema design: school-bus routing (routes, stops, runs, students), which is your own domain",
+        "SQL on the spot: top customers, monthly revenue, finding duplicates",
+        "Git: rebase vs merge, interactive rebase, cherry-pick, resolving conflicts",
+        "Project stories: paratransit platform, Angular 15→20 migration, 1,200 Cypress tests"
+      ],
+      resources: [{ label: "Pro Git: Rebasing", url: "https://git-scm.com/book/en/v2/Git-Branching-Rebasing" }],
+      prompt: "Run a 45-minute technical interview with me: 1 live problem, 1 schema design, then git questions" },
+    { id: "A6", title: "Long live-coding session", when: "Week 4",
+      why: "Some candidates report a 2–3 hour session coding in their own IDE while the interviewer watches. Preparing your setup and pace matters.",
+      tasks: [
+        "A dev setup you can start in 5 minutes: IDE, ERP server, database, debugger",
+        "Two timed 2–3 hour builds: add a feature to an ERP module from a written spec",
+        "Practice narrating your decisions while you code",
+        "Commit often with clear messages",
+        "Optional strong signal: a small merged fix in the framework's open-source repo"
+      ],
+      resources: [],
+      prompt: "Give me a 2-hour ERP feature spec to build, then review my code" },
+    { id: "A7", title: "Final round: team fit", when: "Week 4",
+      why: "Meeting the team or a lead. They check how you work with others and how fast you learn.",
+      tasks: [
+        "Stories ready: a conflict, a failure, feedback you received, learning something fast",
+        "Questions about the team, the product area and code review culture",
+        "Confirm your availability date and relocation plan"
+      ],
+      resources: [],
+      prompt: "Ask me 5 behavioural interview questions and score my answers" }
+  ]},
+  { id: "B", title: "B · Get your profile ready", steps: [
+    { id: "B1", title: "Tailor the resume", when: "Week 5 · Nov 10–16",
+      why: "Your resume is strong on TypeScript. A few leftovers and gaps would cost you at the screening stage, before anyone talks to you.",
+      tasks: [
+        "Remove the three leftover “(optional…)” notes (Angular migration, Athens office, Django REST bullets)",
+        "Change “+3 years” to “3+ years” in the profile",
+        "Add French to Languages (the HQ is in French-speaking Wallonia)",
+        "Move Python up in Skills; mention Python wherever you used it (scraping, Django REST)",
+        "Add your ERP module project at the top of Projects once it exists (stop A3)",
+        "Export as MOHAMED_SAOUAB_Resume_RnD.pdf, 2 pages max"
+      ],
+      resources: [],
+      prompt: "Review my resume for an R&D Software Developer application and rewrite the profile section" },
+    { id: "B2", title: "GitHub, LinkedIn and a referral", when: "Week 5",
+      why: "Recruiters open GitHub and LinkedIn before they open the PDF. A referral from someone inside can get your application read faster.",
+      tasks: [
+        "Pin your best 4 repos (Matcha, WorkHub, Fundly, later the ERP module) with READMEs and screenshots",
+        "LinkedIn headline: Full-Stack Engineer · TypeScript & Python · Open to relocation (Belgium)",
+        "Check msaouab.vercel.app loads fast and shows your 3 best projects",
+        "Find 1337 / 42 alumni working at the company on LinkedIn and ask one for a referral"
+      ],
+      resources: [],
+      prompt: "Write a short LinkedIn message asking a 1337 alumnus at the company for a referral" }
+  ]},
+  { id: "C", title: "C · Apply", steps: [
+    { id: "C1", title: "Apply", when: "Week 6 · ~Nov 17",
+      why: "You apply once you are prepared for every round and your profile is ready. The process then takes 3–5 weeks; keep solving 2 problems a day while you wait.",
+      tasks: [
+        "Pick 1–3 developer openings, Belgium first",
+        "Tailor the profile summary to each posting",
+        "Write a 5–6 line motivation",
+        "Submit and add each application to the tracker below",
+        "Tell your referral contact so they can flag your application"
+      ],
+      resources: [],
+      prompt: "Write a 6-line motivation for this job posting: [paste posting]" }
+  ]},
+  { id: "D", title: "D · Track the process", steps: [
+    { id: "D1", title: "Track every round", when: "Weeks 6–11",
+      why: "Waiting between rounds can be long. Debrief notes help you improve between rounds, and if you need to reapply later.",
+      tasks: [
+        "Log every round in the tracker with its date",
+        "After each round, write a debrief in the notes: questions, what went well, what to fix",
+        "Follow up politely if there is no news after 7–10 days",
+        "Keep doing 2 problems a day until the offer"
+      ],
+      resources: [],
+      prompt: "Here is my debrief from today's round: [paste]. What should I work on before the next one?" }
+  ]},
+  { id: "E", title: "E · Offer, permit, visa, move", steps: [
+    { id: "E1", title: "Offer", when: "After the final round",
+      why: "Read the whole contract before you sign, and find out early which permit route the employer will use for you.",
+      tasks: [
+        "Read the contract: gross salary, benefits, trial period, start date, relocation support",
+        "Ask HR which work permit route applies and what the employer handles for you",
+        "Accept in writing"
+      ],
+      resources: [],
+      prompt: "Help me read this Belgian job offer and list questions to ask: [paste]" },
+    { id: "E2", title: "Gather documents in Morocco", when: "Right after accepting",
+      why: "Apostilles and official extracts take time. Start as soon as HR sends you their document list.",
+      tasks: [
+        "Passport valid well beyond your planned arrival",
+        "Birth certificate with apostille",
+        "Recent criminal record extract with apostille",
+        "Diploma or certificates; ask HR whether the 1337 certificate is enough or another route applies",
+        "Medical certificate, if HR or the visa centre asks for one",
+        "Certified translations into French where required"
+      ],
+      resources: [],
+      caution: "Requirements change. Use the list HR and the visa centre give you, not this one.",
+      prompt: "Make me a document checklist from this list HR sent: [paste]" },
+    { id: "E3", title: "Work permit (single permit)", when: "Several weeks",
+      why: "In Belgium the employer applies for the combined work and residence permit. Your job is to send complete documents quickly.",
+      tasks: [
+        "Send HR every document they request",
+        "Keep copies of everything you send",
+        "Receive the permit approval"
+      ],
+      resources: [{ label: "Belgian Immigration Office", url: "https://dofi.ibz.be/en" }],
+      caution: "Processing times vary. Ask HR for the current estimate.",
+      prompt: "" },
+    { id: "E4", title: "Long-stay D visa", when: "After permit approval",
+      why: "With the permit approval you apply for the D visa at the Belgian visa application centre in Morocco.",
+      tasks: [
+        "Book an appointment at the visa application centre",
+        "Submit passport, photos, permit approval, fee and requested documents",
+        "Collect your passport with the visa"
+      ],
+      resources: [],
+      prompt: "" },
+    { id: "E5", title: "Move and start", when: "Arrival",
+      why: "After you land, your local administration step makes your stay official.",
+      tasks: [
+        "Book the flight and temporary housing",
+        "Register at your commune within 8 working days of arrival",
+        "Get your residence card, open a bank account, join a health insurance fund (mutualité)",
+        "Day one at the new job"
+      ],
+      resources: [],
+      prompt: "" }
+  ]}
+];
+
+const ALL = PHASES.flatMap(p => p.steps);
+let state = { done: {}, notes: {} };
+let apps = [];
+let selected = null;
+let db = null;
+let pendingDelete = null;
+
+const $ = id => document.getElementById(id);
+const taskKey = (s, i) => s.id + "." + i;
+const stepDone = s => s.tasks.every((_, i) => state.done[taskKey(s, i)]);
+const stepCount = s => s.tasks.filter((_, i) => state.done[taskKey(s, i)]).length;
+const currentStep = () => ALL.find(s => !stepDone(s)) || ALL[ALL.length - 1];
+
+function lsGet(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null) n.append(c);
+  return n;
+}
+
+function renderHeader() {
+  const total = ALL.reduce((a, s) => a + s.tasks.length, 0);
+  const done = ALL.reduce((a, s) => a + stepCount(s), 0);
+  $("meterFill").style.width = (total ? done / total * 100 : 0) + "%";
+  $("meterNum").textContent = done + " of " + total + " tasks · " + ALL.filter(stepDone).length + "/" + ALL.length + " stops";
+  const c = currentStep();
+  $("nextTitle").textContent = c.title;
+  $("nextMeta").textContent = c.when + " · " + stepCount(c) + "/" + c.tasks.length + " done";
+}
+
+function renderRoute() {
+  const cur = currentStep();
+  const nav = $("route");
+  nav.replaceChildren(...PHASES.map(p => el("div", { class: "phase" },
+    el("h2", {}, p.title),
+    el("ol", { class: "stops" }, p.steps.map(s => {
+      const n = stepCount(s);
+      const cls = ["stop", stepDone(s) ? "done" : s === cur ? "current" : n ? "partial" : "", s.id === selected ? "sel" : ""].join(" ");
+      return el("li", { class: cls },
+        el("span", { class: "dot", "aria-hidden": "true" }),
+        el("button", { type: "button", onclick: () => select(s.id), "aria-current": s.id === selected ? "step" : false },
+          el("span", { class: "stop-title" }, s.title),
+          el("span", { class: "stop-meta" }, s.when + " · " + n + "/" + s.tasks.length)));
+    })))));
+}
+
+function renderDetail() {
+  const s = ALL.find(x => x.id === selected) || currentStep();
+  const cur = currentStep();
+  const status = stepDone(s) ? el("span", { class: "pill ok" }, "✓ Done")
+    : s === cur ? el("span", { class: "pill cur" }, "● You are here") : el("span", { class: "pill" }, stepCount(s) + "/" + s.tasks.length + " done");
+  const tasks = el("ul", { class: "tasks" }, s.tasks.map((t, i) => {
+    const k = taskKey(s, i);
+    const id = "t-" + k.replace(".", "-");
+    return el("li", {}, el("label", { for: id },
+      el("input", { type: "checkbox", id, checked: !!state.done[k], onchange: e => toggle(k, e.target.checked) }),
+      el("span", {}, t)));
+  }));
+  const ta = el("textarea", { id: "note-" + s.id, placeholder: "Notes, debriefs, links, problems solved…", oninput: e => noteInput(s.id, e.target.value) });
+  ta.value = state.notes[s.id] || "";
+  const noteState = el("span", { class: "note-state", id: "noteState" }, "");
+
+  const side = [];
+  if (s.resources.length) side.push(el("div", { class: "box" }, el("div", { class: "label" }, "Resources"),
+    el("ul", { class: "res" }, s.resources.map(r => el("li", {}, el("a", { href: r.url, target: "_blank", rel: "noopener" }, r.label + " ↗"))))));
+  if (s.prompt) {
+    const p = el("div", { class: "prompt", id: "prompt-" + s.id }, s.prompt);
+    const b = el("button", { class: "btn", type: "button", onclick: async () => {
+      try { await navigator.clipboard.writeText(s.prompt); b.textContent = "Copied"; }
+      catch (e) { const r = document.createRange(); r.selectNodeContents(p); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = "Selected, press ⌘C"; }
+      setTimeout(() => b.textContent = "Copy prompt", 1800);
+    } }, "Copy prompt");
+    side.push(el("div", { class: "box" }, el("div", { class: "label" }, "Practise with Claude"), p, b));
+  }
+
+  $("detail").replaceChildren(
+    el("div", { class: "detail-head" },
+      el("div", { class: "label" }, "Stop " + s.id + " · " + s.when),
+      el("h3", {}, s.title), status,
+      el("p", { class: "why" }, s.why)),
+    s.caution ? el("p", { class: "caution" }, s.caution) : null,
+    el("div", { class: "box" }, el("div", { class: "label" }, "Checklist"), tasks),
+    side.length ? el("div", { class: "cols" }, side) : null,
+    el("div", { class: "box" }, el("div", { class: "label" }, "Notes"), ta, noteState));
+}
+
+function renderApps() {
+  const list = $("appList");
+  if (!apps.length) {
+    list.replaceChildren(el("div", { class: "empty" }, "No applications yet. When you apply (stop C1), add the role above and move it through the rounds here."));
+    return;
+  }
+  const sorted = [...apps].sort((a, b) => (b.applied || "").localeCompare(a.applied || ""));
+  list.replaceChildren(...sorted.map(a => {
+    const rej = a.outcome === "Rejected";
+    const idx = Math.max(0, ROUNDS.indexOf(a.stage));
+    const field = (label, key, type, opts) => {
+      const id = "a-" + a.id + "-" + key;
+      let input;
+      if (opts) { input = el("select", { id, onchange: e => saveApp(a.id, { [key]: e.target.value }) }, opts.map(o => el("option", { value: o, selected: a[key] === o }, o))); }
+      else { input = el("input", { id, type, onchange: e => saveApp(a.id, { [key]: e.target.value }) }); input.value = a[key] || ""; }
+      return el("label", { class: key === "notes" ? "wide" : "" }, label, input);
+    };
+    const delWrap = pendingDelete === a.id
+      ? el("span", { class: "confirm" }, "Delete this application?",
+          el("button", { class: "del", type: "button", onclick: () => removeApp(a.id) }, "Delete"),
+          el("button", { class: "btn", type: "button", onclick: () => { pendingDelete = null; renderApps(); } }, "Keep"))
+      : el("button", { class: "del", type: "button", onclick: () => { pendingDelete = a.id; renderApps(); } }, "Delete");
+    return el("div", { class: "app" },
+      el("div", { class: "app-top" },
+        el("strong", {}, a.role || "Untitled role"),
+        el("span", { class: "stop-meta" }, (a.office || "Office not set") + (a.applied ? " · applied " + a.applied : "")),
+        el("span", { class: "pill" + (rej ? "" : idx === 5 ? " ok" : " cur") }, rej ? "Rejected at " + a.stage : a.stage),
+        delWrap),
+      el("div", {},
+        el("div", { class: "track" + (rej ? " rej" : "") }, ROUNDS.map((_, i) => el("span", { class: i <= idx ? "on" : "" }))),
+        el("div", { class: "track-labels" }, ROUNDS.map(r => el("span", {}, r)))),
+      el("div", { class: "app-fields" },
+        field("Current round", "stage", null, ROUNDS),
+        field("Status", "outcome", null, ["In progress", "Rejected", "Accepted"]),
+        field("Next date", "next", "date"),
+        field("Notes", "notes", "text")));
+  }));
+}
+
+function renderAll() { renderHeader(); renderRoute(); renderDetail(); renderApps(); }
+
+function select(id) {
+  selected = id;
+  lsSet("rnd-route-selected", id);
+  renderRoute(); renderDetail();
+  if (window.matchMedia("(max-width: 820px)").matches) $("detail").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// ---- persistence: shared db when available, this browser otherwise ----
+let writeChain = Promise.resolve();
+function persistState(patch) {
+  lsSet("rnd-route-state", state);
+  if (!db) return;
+  writeChain = writeChain.then(() => db.doc("tracker/state").set(state)).then(
+    () => setSync("Saved"),
+    e => setSync(e && e.code === "invalid_argument" ? "Read-only view" : "Not saved: " + (e && e.code || "error")));
+}
+function setSync(t) { $("sync").textContent = t; }
+
+function toggle(k, v) {
+  state = { ...state, done: { ...state.done, [k]: v } };
+  if (!v) delete state.done[k];
+  persistState();
+  renderHeader(); renderRoute();
+  const s = ALL.find(x => x.id === selected);
+  if (s) { const pill = $("detail").querySelector(".pill"); if (pill) renderDetailKeepFocus(); }
+}
+function renderDetailKeepFocus() {
+  const active = document.activeElement && document.activeElement.id;
+  renderDetail();
+  if (active && $(active)) $(active).focus();
+}
+
+let noteTimer = null;
+function noteInput(id, v) {
+  state = { ...state, notes: { ...state.notes, [id]: v } };
+  const ns = $("noteState"); if (ns) ns.textContent = "Typing…";
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(() => { persistState(); const n = $("noteState"); if (n) n.textContent = "Saved"; }, 800);
+}
+
+function newId() { return "app-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+async function addApp(a) {
+  apps = [...apps, a]; lsSet("rnd-route-apps", apps); renderApps();
+  if (db) { try { await db.collection("applications").doc(a.id).set(a); setSync("Saved"); } catch (e) { setSync("Not saved: " + (e.code || "error")); } }
+}
+async function saveApp(id, patch) {
+  apps = apps.map(a => a.id === id ? { ...a, ...patch } : a); lsSet("rnd-route-apps", apps); renderApps();
+  if (db) { try { await db.collection("applications").doc(id).set(apps.find(a => a.id === id)); setSync("Saved"); } catch (e) { setSync("Not saved: " + (e.code || "error")); } }
+}
+async function removeApp(id) {
+  pendingDelete = null;
+  apps = apps.filter(a => a.id !== id); lsSet("rnd-route-apps", apps); renderApps();
+  if (db) { try { await db.collection("applications").doc(id).delete(); } catch (e) { setSync("Not saved: " + (e.code || "error")); } }
+}
+
+$("addForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const role = $("fRole").value.trim(); if (!role) return;
+  addApp({ id: newId(), role, office: $("fOffice").value.trim(), applied: $("fDate").value || new Date().toISOString().slice(0, 10), stage: "Applied", outcome: "In progress", next: "", notes: "" });
+  $("fRole").value = ""; $("fOffice").value = ""; $("fDate").value = "";
+});
+$("goNext").addEventListener("click", () => select(currentStep().id));
+
+// ---- boot ----
+state = lsGet("rnd-route-state", state);
+apps = lsGet("rnd-route-apps", []);
+const hash = location.hash.slice(1);
+selected = ALL.some(s => s.id === hash) ? hash : lsGet("rnd-route-selected", null) || currentStep().id;
+renderAll();
+
+(async () => {
+  if (!window.claude || !window.claude.use) return;
+  db = await window.claude.use("db");
+  if (!db) return;
+  setSync("Syncing…");
+  db.doc("tracker/state").onSnapshot(snap => {
+    if (snap.metadata.hasPendingWrites) return;
+    if (snap.exists) {
+      const d = snap.data();
+      state = { done: { ...(d.done || {}) }, notes: { ...(d.notes || {}) } };
+      lsSet("rnd-route-state", state);
+      const typing = document.activeElement && document.activeElement.tagName === "TEXTAREA";
+      renderHeader(); renderRoute(); if (!typing) renderDetailKeepFocus();
+    }
+    setSync("Synced");
+  }, () => setSync("Saved on this device"));
+  db.collection("applications").onSnapshot(snap => {
+    if (snap.metadata.hasPendingWrites) return;
+    apps = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    lsSet("rnd-route-apps", apps);
+    const editing = document.activeElement && document.activeElement.closest && document.activeElement.closest(".app");
+    if (!editing) renderApps();
+  }, () => {});
+})();
+</script>

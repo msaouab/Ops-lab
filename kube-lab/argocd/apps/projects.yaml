@@ -1,0 +1,41 @@
+# AppProjects are Argo CD's guard-rails: which repos, which namespaces, which
+# cluster-scoped kinds an Application may touch.
+#
+# Exercise: point a shipit Application at namespace kube-system and watch
+# Argo CD refuse it.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Cluster add-ons (gateway, operators, monitoring). Trusted.
+  sourceRepos: ["*"]
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: apps
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Team workloads. Namespaced resources only, fixed namespaces.
+  sourceRepos:
+    - https://github.com/msaouab/ops-lab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: gitea
+    - server: https://kubernetes.default.svc
+      namespace: shipit-*
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace

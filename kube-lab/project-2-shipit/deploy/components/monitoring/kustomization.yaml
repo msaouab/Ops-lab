@@ -1,0 +1,5 @@
+# Opt-in: needs the Prometheus Operator CRDs (installed by platform/monitoring).
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - service-monitors.yaml

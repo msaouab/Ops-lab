@@ -1,0 +1,29 @@
+# Non-secret Gitea settings, injected as environment variables.
+# The image turns every GITEA__<section>__<KEY> variable into that setting in
+# app.ini at startup. Secrets (DB password, SECRET_KEY) come from Secret "gitea".
+#
+# Lesson: env vars are read once, when the container starts. Change a value
+# here, re-apply, and the running pod still has the old one:
+#   kubectl -n gitea exec deploy/gitea -- env | grep GITEA__log
+# Then: kubectl -n gitea rollout restart deploy/gitea
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-config
+  namespace: gitea
+  labels:
+    app.kubernetes.io/part-of: gitea
+data:
+  GITEA__database__DB_TYPE: postgres
+  GITEA__database__HOST: postgres:5432
+  GITEA__database__NAME: gitea
+  GITEA__server__DOMAIN: gitea.localhost
+  GITEA__server__ROOT_URL: http://gitea.localhost:8080/
+  GITEA__server__HTTP_PORT: "3000"
+  # HTTP(S) clone only; SSH would need a TCPRoute on the gateway (stretch exercise)
+  GITEA__server__DISABLE_SSH: "true"
+  # skip the web installer: everything is configured here
+  GITEA__security__INSTALL_LOCK: "true"
+  # only the admin (created by the gitea-init Job) can add users
+  GITEA__service__DISABLE_REGISTRATION: "true"
+  GITEA__log__LEVEL: Info

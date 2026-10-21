@@ -1,0 +1,25 @@
+# The only thing you ever `kubectl apply` by hand (app-of-apps pattern).
+# It points Argo CD at argocd/apps/, and everything else flows from Git.
+#   kubectl apply -n argocd -f argocd/root.yaml
+#
+# Using your own fork? Replace the repoURL everywhere:  make set-repo OWNER=<you>
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/msaouab/ops-lab.git
+    targetRevision: main
+    path: kube-lab/argocd/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

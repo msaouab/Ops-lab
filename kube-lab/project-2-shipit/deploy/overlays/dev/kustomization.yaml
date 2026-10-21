@@ -1,0 +1,28 @@
+# Environment: dev — http://shipit-dev.localhost:8080
+# CI rewrites the image tags below on every push to main (continuous deployment).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shipit-dev
+resources:
+  - ../../base
+components:
+  - ../../components/monitoring
+images:
+  - name: ghcr.io/msaouab/shipit-api
+    newTag: sha-pending
+  - name: ghcr.io/msaouab/shipit-worker
+    newTag: sha-pending
+patches:
+  - target: { kind: HTTPRoute, name: api }
+    patch: |
+      - op: replace
+        path: /spec/hostnames/0
+        value: shipit-dev.localhost
+  - target: { kind: HorizontalPodAutoscaler, name: api }
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 3

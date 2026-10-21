@@ -1,0 +1,9 @@
+# Never commit plain Secrets — only SealedSecrets
+*secret*.yaml
+!*.sealedsecret.yaml
+
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store

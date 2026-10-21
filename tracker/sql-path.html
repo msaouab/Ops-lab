@@ -1,0 +1,1029 @@
+<title>SQL Path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: a roadmap of topics (a graph of nodes, in learning order) -> topic page (lesson + problem list) -> two-pane workspace (statement | editor + output). */
+:root {
+  --bg: #f1f3f7;
+  --surface: #ffffff;
+  --sunken: #e8ecf2;
+  --ink: #131922;
+  --muted: #586374;
+  --line: #d6dce6;
+  --accent: #2c52cf;
+  --accent-ink: #ffffff;
+  --accent-soft: #e1e7fb;
+  --easy: #1d8550;
+  --easy-soft: #dcf2e6;
+  --med: #a8670f;
+  --med-soft: #f8ecd7;
+  --hard: #c13a33;
+  --hard-soft: #f9e0de;
+  --code-bg: #f7f9fc;
+  --kw: #2c52cf;
+  --str: #a1441b;
+  --num: #7a3db0;
+  --com: #7c8795;
+  --fn: #0d776a;
+  --f-display: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1218; --surface: #161b24; --sunken: #1c2330; --ink: #e3e8f0; --muted: #8e9aab; --line: #283142;
+    --accent: #7e9cff; --accent-ink: #0e1218; --accent-soft: #1e2a4c;
+    --easy: #4fc48c; --easy-soft: #15301f; --med: #e4ac4c; --med-soft: #33270f; --hard: #f07b71; --hard-soft: #3a1a18;
+    --code-bg: #11161e; --kw: #8fa9ff; --str: #f2a47c; --num: #c99cf3; --com: #6a7587; --fn: #5ad0be;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1218; --surface: #161b24; --sunken: #1c2330; --ink: #e3e8f0; --muted: #8e9aab; --line: #283142;
+  --accent: #7e9cff; --accent-ink: #0e1218; --accent-soft: #1e2a4c;
+  --easy: #4fc48c; --easy-soft: #15301f; --med: #e4ac4c; --med-soft: #33270f; --hard: #f07b71; --hard-soft: #3a1a18;
+  --code-bg: #11161e; --kw: #8fa9ff; --str: #f2a47c; --num: #c99cf3; --com: #6a7587; --fn: #5ad0be;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, pre, textarea { font-family: var(--f-mono); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: var(--accent); }
+
+/* top bar */
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.top-in { max-width: 1280px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.brand { background: none; border: 0; padding: 0; display: flex; align-items: center; gap: 10px; font-family: var(--f-display); font-weight: 800; font-size: 19px; }
+.brand-mark { width: 28px; height: 28px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--f-mono); font-size: 13px; font-weight: 600; }
+.nav { display: flex; gap: 4px; }
+.nav button { background: none; border: 0; padding: 6px 12px; border-radius: 8px; color: var(--muted); font-weight: 600; }
+.nav button[aria-current="page"] { color: var(--ink); background: var(--sunken); }
+.nav button:hover { color: var(--ink); }
+.who { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--muted); }
+.who select, .who input { font: inherit; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px; max-width: 150px; }
+.score {display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.score b { color: var(--ink); }
+.meter { width: 120px; height: 6px; background: var(--sunken); border-radius: 99px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; }
+.loading { padding: 80px 16px; text-align: center; color: var(--muted); }
+
+/* buttons & pills */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 15px; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 5px 11px; font-size: 13.5px; border-radius: 7px; }
+.pill { display: inline-block; font-size: 12.5px; font-weight: 700; padding: 2px 9px; border-radius: 99px; letter-spacing: .02em; white-space: nowrap; }
+.pill.Easy { color: var(--easy); background: var(--easy-soft); }
+.pill.Medium { color: var(--med); background: var(--med-soft); }
+.pill.Hard { color: var(--hard); background: var(--hard-soft); }
+.eyebrow { font-size: 12.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+kbd { font-family: var(--f-mono); font-size: 11.5px; padding: 1px 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--surface); color: var(--muted); }
+
+/* home */
+.hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 32px; align-items: end; margin-bottom: 40px; }
+.hero h1 { font-size: clamp(32px, 5vw, 52px); font-weight: 800; margin-block: 10px 14px; }
+.hero h1 .q { font-family: var(--f-mono); font-weight: 600; color: var(--accent); font-size: .82em; letter-spacing: -0.03em; }
+.hero p.lede { color: var(--muted); font-size: 18px; max-width: 58ch; }
+.hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+.stats { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; }
+.stat-row { display: grid; grid-template-columns: 70px minmax(0, 1fr) 54px; align-items: center; gap: 12px; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.stat-row .bar { height: 8px; background: var(--sunken); border-radius: 99px; overflow: hidden; }
+.stat-row .bar i { display: block; height: 100%; border-radius: 99px; }
+.stat-row span:last-child { text-align: right; color: var(--muted); }
+.stats-total { display: flex; align-items: baseline; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.stats-total b { font-family: var(--f-display); font-size: 34px; font-variant-numeric: tabular-nums; }
+.stats-total span { color: var(--muted); }
+
+.map-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.map-head h2 { font-size: 24px; }
+.map-head p { color: var(--muted); font-size: 14.5px; }
+.map { position: relative; max-width: 780px; margin: 0 auto; display: grid; gap: 46px; padding-block: 8px; }
+.map svg.edges { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.map svg path { fill: none; stroke: var(--line); stroke-width: 2; }
+.map svg path.done { stroke: var(--accent); }
+.map-row { display: flex; justify-content: center; gap: 28px; position: relative; }
+.node { position: relative; z-index: 1; flex: 0 1 240px; min-width: 0; text-align: left; background: var(--surface); border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px 12px; display: grid; gap: 8px; transition: transform .15s, border-color .15s, box-shadow .15s; }
+.node:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 6px 18px -10px color-mix(in srgb, var(--accent) 60%, transparent); }
+.node.complete { border-color: var(--accent); background: var(--accent-soft); }
+.node-top { display: flex; align-items: baseline; gap: 8px; }
+.node-num { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-weight: 600; }
+.node-title { font-family: var(--f-display); font-weight: 700; font-size: 16.5px; line-height: 1.2; }
+.node-cmds { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.node-prog { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.node-prog .bar { flex: 1; height: 5px; background: var(--sunken); border-radius: 99px; overflow: hidden; }
+.node-prog .bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+
+/* topic */
+.crumbs { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); margin-bottom: 14px; flex-wrap: wrap; }
+.crumbs button { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; }
+.topic-head { margin-bottom: 28px; max-width: 72ch; }
+.topic-head h1 { font-size: clamp(28px, 4vw, 40px); font-weight: 800; margin-block: 6px 10px; }
+.topic-head p { color: var(--muted); font-size: 17.5px; }
+.topic-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: start; }
+.lesson { display: grid; gap: 30px; min-width: 0; }
+.sec { display: grid; gap: 10px; min-width: 0; scroll-margin-top: 84px; }
+.sec h3 { font-size: 20px; display: flex; gap: 10px; align-items: baseline; }
+.sec h3 .n { font-family: var(--f-mono); font-size: 13px; color: var(--muted); font-weight: 500; }
+.sec p, .sec li { max-width: 68ch; }
+.sec ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.sec code, .stmt code, .panel code { font-size: .88em; background: var(--sunken); padding: 1px 5px; border-radius: 4px; }
+.pg { border-left: 3px solid var(--fn); background: var(--surface); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 14.5px; max-width: 68ch; }
+.pg b { color: var(--fn); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin-right: 6px; }
+.example { border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--code-bg); min-width: 0; }
+.example pre { margin: 0; padding: 12px 14px; overflow-x: auto; font-size: 13.5px; line-height: 1.6; }
+.example-bar { display: flex; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--line); background: var(--surface); flex-wrap: wrap; }
+.example .out { border-top: 1px solid var(--line); background: var(--surface); }
+
+.side { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 76px); display: grid; gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.card-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.card-head h2 { font-size: 17px; }
+.card-head span { font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.plist { list-style: none; margin: 0; padding: 0; }
+.plist li + li { border-top: 1px solid var(--line); }
+.plist button { width: 100%; background: none; border: 0; text-align: left; padding: 11px 16px; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.plist button:hover { background: var(--sunken); }
+.plist .t { font-weight: 600; font-size: 15px; }
+.check { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; }
+.check.on { background: var(--easy); border-color: var(--easy); }
+.check.on::after { content: ""; width: 8px; height: 4px; border-left: 2px solid var(--surface); border-bottom: 2px solid var(--surface); transform: rotate(-45deg) translate(1px, -1px); }
+.next-topic { margin-top: 8px; }
+
+/* workspace */
+.ws-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.ws-head h1 { font-size: 24px; font-weight: 800; }
+.ws-head .spacer { flex: 1; }
+.ws { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 18px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: -6px -18px 0; padding: 0 12px; overflow-x: auto; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 10px; font-weight: 600; font-size: 14.5px; color: var(--muted); white-space: nowrap; margin-bottom: -1px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tabs button:hover { color: var(--ink); }
+.pane, .lesson-pane { display: grid; gap: 18px; min-width: 0; }
+.lesson-pane .lesson { gap: 24px; }
+.lesson-pane .sec h3 { font-size: 17.5px; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.readbtn { display: inline-flex; align-items: center; gap: 7px; background: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 11px 3px 5px; font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.readbtn:hover { border-color: var(--easy); color: var(--ink); }
+.readbtn .check { width: 16px; height: 16px; }
+.readbtn.on { color: var(--easy); border-color: var(--easy); background: var(--easy-soft); }
+.lesson-end { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lesson-bar { height: 6px; margin: 12px 16px 14px; background: var(--sunken); border-radius: 99px; overflow: hidden; }
+.lesson-bar i { display: block; height: 100%; background: var(--easy); border-radius: 99px; transition: width .3s; }
+.tabstate { font-size: 12px; font-weight: 700; color: var(--muted); background: var(--sunken); border-radius: 99px; padding: 1px 7px; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.pill.Lesson { color: var(--accent); background: var(--accent-soft); }
+.node-prog .lab { width: 58px; flex: none; }
+.node-prog .tick { color: var(--easy); font-weight: 700; }
+.stmt { display: grid; gap: 10px; font-size: 16px; }
+.stmt p { max-width: 64ch; }
+.subh { font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .02em; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.subh small { font-family: var(--f-body); font-weight: 500; color: var(--muted); font-size: 13px; }
+.tables { display: grid; gap: 8px; }
+.tbl { border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; font-size: 13px; min-width: 0; }
+.tbl b { font-family: var(--f-mono); font-size: 13px; }
+.tbl .cols { font-family: var(--f-mono); color: var(--muted); font-size: 12px; margin-top: 3px; overflow-wrap: anywhere; }
+.tbl .cols .k { color: var(--accent); }
+details { border: 1px solid var(--line); border-radius: 9px; }
+details summary { cursor: pointer; padding: 9px 12px; font-weight: 600; font-size: 14.5px; list-style: none; display: flex; justify-content: space-between; }
+details summary::after { content: "+"; color: var(--muted); font-family: var(--f-mono); }
+details[open] summary::after { content: "−"; }
+details > div { padding: 0 12px 12px; display: grid; gap: 10px; font-size: 15px; }
+details pre { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font-size: 13px; line-height: 1.6; }
+
+.ide { display: grid; gap: 12px; min-width: 0; }
+.ide-box { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; min-width: 0; }
+.ide-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.ide-bar .label { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); margin-right: auto; }
+.ide-foot { display: flex; align-items: center; gap: 8px; padding: 10px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.ide-foot .hint { margin-right: auto; font-size: 12.5px; color: var(--muted); display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+
+.editor { position: relative; height: 280px; min-height: 140px; resize: vertical; overflow: hidden; background: var(--code-bg); }
+.editor pre, .editor textarea { position: absolute; inset: 0; margin: 0; padding: 14px 16px; border: 0; font-family: var(--f-mono); font-size: 14px; line-height: 1.6; white-space: pre; tab-size: 2; letter-spacing: 0; font-variant-ligatures: none; }
+.editor pre { pointer-events: none; overflow: hidden; color: var(--ink); }
+.editor textarea { width: 100%; height: 100%; resize: none; background: transparent; color: transparent; caret-color: var(--ink); overflow: auto; outline: none; }
+.editor textarea::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+.editor textarea::placeholder { color: var(--com); }
+.tk-kw { color: var(--kw); font-weight: 600; }
+.tk-str { color: var(--str); }
+.tk-num { color: var(--num); }
+.tk-com { color: var(--com); font-style: italic; }
+.tk-fn { color: var(--fn); }
+
+.verdict { padding: 12px 14px; border-radius: 10px; display: grid; gap: 4px; font-size: 15px; }
+.verdict b { font-family: var(--f-display); font-size: 18px; }
+.verdict.ok { background: var(--easy-soft); color: var(--easy); }
+.verdict.bad { background: var(--hard-soft); color: var(--hard); }
+.verdict.info { background: var(--sunken); color: var(--muted); }
+.verdict span { color: var(--ink); }
+.results { display: grid; gap: 10px; padding: 12px; min-width: 0; }
+.results .meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.compare > div { min-width: 0; display: grid; gap: 6px; align-content: start; }
+
+.tscroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; max-height: 360px; overflow-y: auto; }
+table.rt { border-collapse: collapse; font-family: var(--f-mono); font-size: 12.5px; width: max-content; min-width: 100%; }
+table.rt th, table.rt td { padding: 5px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.rt th { position: sticky; top: 0; background: var(--sunken); font-weight: 600; z-index: 1; }
+table.rt tr:last-child td { border-bottom: 0; }
+table.rt td.num { text-align: right; }
+table.rt td.null { color: var(--com); font-style: italic; }
+table.rt tr.diff td { background: var(--hard-soft); }
+.err { font-family: var(--f-mono); font-size: 13px; color: var(--hard); background: var(--hard-soft); padding: 10px 12px; border-radius: 8px; overflow-wrap: anywhere; }
+.muted { color: var(--muted); }
+
+/* playground */
+.play { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; align-items: start; }
+.schema { display: grid; gap: 8px; }
+.schema button.tbl { background: var(--surface); text-align: left; width: 100%; }
+.schema button.tbl:hover { border-color: var(--accent); }
+
+@media (max-width: 960px) {
+  .topic-grid, .ws, .play { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; }
+  .hero { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .map { gap: 34px; }
+  .map-row { gap: 12px; }
+  .node { padding: 10px; }
+  .node-cmds { display: none; }
+  .compare { grid-template-columns: minmax(0, 1fr); }
+  .score .meter { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <button class="brand" data-go="home" type="button"><span class="brand-mark">SQL</span>SQL Path</button>
+    <nav class="nav">
+      <button type="button" data-go="home" id="nav-home">Roadmap</button>
+      <button type="button" data-go="play" id="nav-play">Playground</button>
+    </nav>
+    <div class="who" id="who"></div>
+    <div class="score" id="score"></div>
+  </div>
+</header>
+<main class="wrap" id="app"><div class="loading">Loading the SQL engine…</div></main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-asm.js"></script>
+<script>
+/*DATA-START*/
+const SEED = `
+CREATE TABLE hr_department (id INTEGER PRIMARY KEY, name TEXT NOT NULL, budget INTEGER);
+CREATE TABLE hr_employee (id INTEGER PRIMARY KEY, name TEXT NOT NULL, job_title TEXT, department_id INTEGER REFERENCES hr_department(id), manager_id INTEGER REFERENCES hr_employee(id), salary INTEGER, hire_date TEXT, email TEXT);
+CREATE TABLE res_partner (id INTEGER PRIMARY KEY, name TEXT NOT NULL, city TEXT, country TEXT, is_company INTEGER, email TEXT);
+CREATE TABLE product_product (id INTEGER PRIMARY KEY, name TEXT NOT NULL, category TEXT, list_price REAL, cost REAL);
+CREATE TABLE sale_order (id INTEGER PRIMARY KEY, name TEXT NOT NULL, partner_id INTEGER REFERENCES res_partner(id), salesperson_id INTEGER REFERENCES hr_employee(id), date_order TEXT, state TEXT);
+CREATE TABLE sale_order_line (id INTEGER PRIMARY KEY, order_id INTEGER REFERENCES sale_order(id), product_id INTEGER REFERENCES product_product(id), qty INTEGER, price_unit REAL, discount INTEGER DEFAULT 0);
+INSERT INTO hr_department VALUES
+ (1,'Management',200000),(2,'Sales',150000),(3,'R&D',300000),(4,'Support',80000),(5,'Legal',50000);
+INSERT INTO hr_employee VALUES
+ (1,'Fatima Zahra Bennani','CEO',1,NULL,15000,'2015-03-01','fz.bennani@erp-demo.ma'),
+ (2,'Sara Alami','Sales Manager',2,1,9000,'2016-06-15','sara.alami@erp-demo.ma'),
+ (3,'Omar Tazi','Salesperson',2,2,5200,'2019-01-10','omar.tazi@erp-demo.ma'),
+ (4,'Karim El Idrissi','CTO',3,1,12000,'2016-02-01','karim.idrissi@erp-demo.ma'),
+ (5,'Lina Chraibi','Developer',3,4,6500,'2020-09-01','lina.chraibi@erp-demo.ma'),
+ (6,'Youssef Amrani','Developer',3,4,6100,'2021-04-12',NULL),
+ (7,'Nadia Berrada','Support Lead',4,1,5800,'2018-11-20','nadia.berrada@erp-demo.ma'),
+ (8,'Hamza Ouali','Support Agent',4,7,3900,'2022-02-14','hamza.ouali@erp-demo.ma'),
+ (9,'Salma Fassi','Salesperson',2,2,5600,'2020-03-03','salma.fassi@erp-demo.ma'),
+ (10,'Mehdi Kabbaj','Developer',3,5,5400,'2023-07-01','mehdi.kabbaj@erp-demo.ma'),
+ (11,'Imane Lahlou','Functional Consultant',3,4,7000,'2019-10-07','imane.lahlou@erp-demo.ma'),
+ (12,'Rachid Naciri','Salesperson',2,9,4800,'2024-01-15',NULL),
+ (13,'Aya Mansouri','Intern',NULL,4,1500,'2026-06-01','aya.mansouri@erp-demo.ma'),
+ (14,'Anas Belhaj','Support Agent',4,7,3900,'2023-05-22','anas.belhaj@erp-demo.ma');
+INSERT INTO res_partner VALUES
+ (1,'Atlas Logistics','Casablanca','Morocco',1,'contact@atlaslog.ma'),
+ (2,'Riad Design Studio','Marrakech','Morocco',1,'hello@riaddesign.ma'),
+ (3,'Brussels Bikes','Brussels','Belgium',1,'info@brusselsbikes.be'),
+ (4,'Hassan Ait Ali','Rabat','Morocco',0,'hassan.aitali@gmail.com'),
+ (5,'Café Lumière','Paris','France',1,NULL),
+ (6,'Nora Lefevre','Louvain-la-Neuve','Belgium',0,'nora.lefevre@gmail.com'),
+ (7,'Sahara Solar','Ouarzazate','Morocco',1,'sales@saharasolar.ma'),
+ (8,'Tanger Med Trading','Tangier','Morocco',1,'trade@tmt.ma'),
+ (9,'Julien Dubois','Paris','France',0,'j.dubois@outlook.fr'),
+ (10,'Fes Crafts Coop','Fes','Morocco',1,'coop@fescrafts.ma');
+INSERT INTO product_product VALUES
+ (1,'Office Chair','Furniture',249,140),(2,'Standing Desk','Furniture',599,360),(3,'Desk Lamp','Office',39,15),
+ (4,'Monitor 27 inch','Electronics',329,250),(5,'Wireless Keyboard','Electronics',79,35),(6,'Notebook Pack','Office',12,4),
+ (7,'Filing Cabinet','Furniture',189,110),(8,'Webcam HD','Electronics',99,45),(9,'Whiteboard','Office',149,70),
+ (10,'Ergo Footrest','Furniture',59,22);
+INSERT INTO sale_order VALUES
+ (1,'S00001',1,3,'2026-01-08','done'),(2,'S00002',2,9,'2026-01-15','done'),(3,'S00003',4,3,'2026-02-02','sale'),
+ (4,'S00004',3,9,'2026-02-10','cancel'),(5,'S00005',1,3,'2026-02-21','sale'),(6,'S00006',5,12,'2026-03-05','draft'),
+ (7,'S00007',7,9,'2026-03-18','done'),(8,'S00008',8,3,'2026-04-01','sale'),(9,'S00009',6,12,'2026-04-09','sale'),
+ (10,'S00010',2,9,'2026-05-12','done'),(11,'S00011',9,3,'2026-05-30','cancel'),(12,'S00012',7,9,'2026-06-14','sale');
+INSERT INTO sale_order_line VALUES
+ (1,1,1,10,249,10),(2,1,3,10,39,0),(3,2,2,2,599,0),(4,2,9,1,149,0),(5,3,5,1,79,0),(6,3,8,1,99,0),
+ (7,4,4,3,329,5),(8,5,7,4,189,0),(9,5,6,20,12,0),(10,6,1,2,249,0),(11,7,4,6,329,10),(12,7,5,6,79,10),
+ (13,7,8,6,99,10),(14,8,2,1,599,0),(15,8,3,2,39,0),(16,9,6,5,12,0),(17,10,1,5,249,5),(18,10,7,2,189,0),
+ (19,11,9,1,149,0),(20,12,4,2,329,0),(21,12,3,4,39,0);
+`;
+
+const TOPICS = [
+{
+  id: 'select', title: 'SELECT Basics', cmds: 'SELECT · FROM · AS', parents: [],
+  summary: 'Every query starts here. Pick a table, pick the columns, and give them readable names.',
+  lesson: [
+    { h: 'Reading a table', p: 'A query asks the database for rows. <code>SELECT</code> lists the columns you want and <code>FROM</code> names the table. <code>*</code> means every column.', code: 'SELECT * FROM hr_department;' },
+    { h: 'Choosing columns', p: 'List columns separated by commas. They come back in the order you write them, which does not have to match the table.', code: 'SELECT name, job_title, salary\nFROM hr_employee;' },
+    { h: 'Aliases and computed columns', p: '<code>AS</code> renames an output column. A column can also be an expression computed from other columns of the same row.', code: 'SELECT name AS product,\n       list_price - cost AS margin\nFROM product_product;' },
+    { h: 'Statements and comments', p: 'End each statement with <code>;</code>. <code>--</code> starts a comment that runs to the end of the line. Keywords are case-insensitive; writing them in capitals is a convention that makes queries easier to scan.', code: '-- every partner and where they are\nselect name, city, country from res_partner;' },
+  ],
+  problems: [
+    { title: 'All departments', diff: 'Easy', tables: ['hr_department'], prompt: 'Return every column of every row in <code>hr_department</code>.', hint: 'The star selects all columns.', solution: 'SELECT * FROM hr_department;' },
+    { title: 'Product price list', diff: 'Easy', tables: ['product_product'], prompt: 'Return the <code>name</code> and <code>list_price</code> of every product.', hint: 'Two columns, separated by a comma.', solution: 'SELECT name, list_price FROM product_product;' },
+    { title: 'Rename the columns', diff: 'Easy', checkCols: true, tables: ['hr_employee'], prompt: 'Return each employee\'s <code>name</code> as a column called <code>employee</code> and their <code>job_title</code> as <code>role</code>. Column names are checked.', hint: 'column AS new_name', solution: 'SELECT name AS employee, job_title AS role FROM hr_employee;' },
+    { title: 'Margin per product', diff: 'Medium', checkCols: true, tables: ['product_product'], prompt: 'For every product return its <code>name</code> and a column <code>margin</code> equal to <code>list_price - cost</code>, plus a column <code>margin_x10</code> that is the margin for 10 units.', hint: 'You can repeat the expression and multiply it: (list_price - cost) * 10.', solution: 'SELECT name, list_price - cost AS margin, (list_price - cost) * 10 AS margin_x10\nFROM product_product;' },
+  ]
+},
+{
+  id: 'filter', title: 'Filtering Rows', cmds: 'WHERE · AND/OR · IN · LIKE · IS NULL', parents: ['select'],
+  summary: 'WHERE keeps only the rows that match a condition. Combine conditions, match patterns, and handle missing values.',
+  lesson: [
+    { h: 'WHERE', p: '<code>WHERE</code> runs a test on each row and keeps the rows where it is true. Text values go in single quotes.', code: "SELECT name, salary\nFROM hr_employee\nWHERE salary > 6000;" },
+    { h: 'Comparison operators', p: '<code>=</code>, <code>&lt;&gt;</code> (or <code>!=</code>), <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>. They work on numbers, text and ISO dates such as <code>\'2026-03-01\'</code>.', code: "SELECT name, date_order\nFROM sale_order\nWHERE date_order >= '2026-04-01';" },
+    { h: 'AND, OR, NOT', p: '<code>AND</code> binds tighter than <code>OR</code>, so use parentheses whenever you mix them. Without them, the query below would mean something different.', code: "SELECT name, city\nFROM res_partner\nWHERE country = 'Morocco'\n  AND (city = 'Rabat' OR city = 'Fes');" },
+    { h: 'IN and BETWEEN', p: '<code>IN (…)</code> is a short way to write several <code>OR</code>s. <code>BETWEEN a AND b</code> includes both ends.', code: "SELECT name, state FROM sale_order WHERE state IN ('sale', 'done');\n\nSELECT name, list_price FROM product_product WHERE list_price BETWEEN 50 AND 200;" },
+    { h: 'Pattern matching with LIKE', p: '<code>%</code> matches any run of characters (including none), <code>_</code> matches exactly one.', code: "SELECT name, email\nFROM res_partner\nWHERE email LIKE '%.ma';", pg: '<code>LIKE</code> is case-sensitive in PostgreSQL. Use <code>ILIKE</code> for a case-insensitive match. SQLite\'s <code>LIKE</code> ignores case for ASCII letters.' },
+    { h: 'NULL means unknown', p: '<code>NULL</code> is not a value, so <code>email = NULL</code> is never true. Test for it with <code>IS NULL</code> or <code>IS NOT NULL</code>.', code: 'SELECT name FROM hr_employee WHERE email IS NULL;' },
+  ],
+  problems: [
+    { title: 'Big earners', diff: 'Easy', tables: ['hr_employee'], prompt: 'Return the <code>name</code> and <code>salary</code> of employees who earn more than 6000.', hint: 'WHERE salary > …', solution: 'SELECT name, salary FROM hr_employee WHERE salary > 6000;' },
+    { title: 'Confirmed orders', diff: 'Easy', tables: ['sale_order'], prompt: 'Return the <code>name</code> of every order whose <code>state</code> is <code>\'sale\'</code> or <code>\'done\'</code>.', hint: 'IN (…) keeps it short.', solution: "SELECT name FROM sale_order WHERE state IN ('sale', 'done');" },
+    { title: 'Moroccan companies', diff: 'Easy', tables: ['res_partner'], prompt: 'Return <code>name</code> and <code>city</code> of partners that are companies (<code>is_company = 1</code>) located in Morocco.', hint: 'Two conditions joined with AND.', solution: "SELECT name, city FROM res_partner WHERE country = 'Morocco' AND is_company = 1;" },
+    { title: 'Missing emails', diff: 'Easy', tables: ['hr_employee'], prompt: 'Return the <code>name</code> of employees with no email address.', hint: '= NULL never matches anything.', solution: 'SELECT name FROM hr_employee WHERE email IS NULL;' },
+    { title: 'Gmail contacts', diff: 'Easy', tables: ['res_partner'], prompt: 'Return <code>name</code> and <code>email</code> of partners whose email ends with <code>@gmail.com</code>.', hint: "LIKE '%…'", solution: "SELECT name, email FROM res_partner WHERE email LIKE '%@gmail.com';" },
+    { title: 'Mid-range furnishing', diff: 'Medium', tables: ['product_product'], prompt: 'Return <code>name</code> and <code>list_price</code> of products in the <code>Furniture</code> or <code>Office</code> category priced between 100 and 500 (inclusive).', hint: 'Mixing OR with AND needs parentheses, or use IN for the categories.', solution: "SELECT name, list_price\nFROM product_product\nWHERE category IN ('Furniture', 'Office')\n  AND list_price BETWEEN 100 AND 500;" },
+  ]
+},
+{
+  id: 'sort', title: 'Sorting & Limiting', cmds: 'ORDER BY · LIMIT · OFFSET · DISTINCT', parents: ['select'],
+  summary: 'Tables have no built-in order. ORDER BY gives you one, LIMIT trims the result, DISTINCT removes duplicates.',
+  lesson: [
+    { h: 'ORDER BY', p: 'Sort by one or more columns. <code>ASC</code> is the default; <code>DESC</code> reverses. Later columns break ties in earlier ones.', code: 'SELECT name, department_id, salary\nFROM hr_employee\nORDER BY department_id, salary DESC;' },
+    { h: 'LIMIT and OFFSET', p: '<code>LIMIT n</code> returns at most n rows. <code>OFFSET k</code> skips the first k. Together they paginate. Always pair them with <code>ORDER BY</code>, or which rows you get is not defined.', code: 'SELECT name, list_price\nFROM product_product\nORDER BY list_price DESC\nLIMIT 3 OFFSET 0;' },
+    { h: 'DISTINCT', p: '<code>DISTINCT</code> removes duplicate rows from the result. It applies to the whole row, not just the first column.', code: 'SELECT DISTINCT country FROM res_partner;\n\nSELECT DISTINCT country, is_company FROM res_partner ORDER BY country;' },
+    { h: 'The order a query runs in', p: 'You write <code>SELECT … FROM … WHERE … ORDER BY … LIMIT</code>, but the database evaluates <code>FROM → WHERE → SELECT → DISTINCT → ORDER BY → LIMIT</code>. That is why <code>ORDER BY</code> can use an alias defined in <code>SELECT</code>, but <code>WHERE</code> cannot.', code: 'SELECT name, list_price - cost AS margin\nFROM product_product\nORDER BY margin DESC;', pg: 'PostgreSQL puts NULLs last in ascending order; SQLite puts them first. Write <code>NULLS FIRST</code> or <code>NULLS LAST</code> when it matters.' },
+  ],
+  problems: [
+    { title: 'Salary ranking', diff: 'Easy', ordered: true, tables: ['hr_employee'], prompt: 'Return <code>name</code> and <code>salary</code> of all employees, highest salary first. Break ties by <code>name</code> alphabetically.', hint: 'ORDER BY salary DESC, name', solution: 'SELECT name, salary FROM hr_employee ORDER BY salary DESC, name;' },
+    { title: 'Three priciest products', diff: 'Easy', ordered: true, tables: ['product_product'], prompt: 'Return <code>name</code> and <code>list_price</code> of the 3 most expensive products, most expensive first.', hint: 'Sort, then LIMIT.', solution: 'SELECT name, list_price FROM product_product ORDER BY list_price DESC LIMIT 3;' },
+    { title: 'Customer cities', diff: 'Easy', ordered: true, tables: ['res_partner'], prompt: 'Return each distinct <code>city</code> in <code>res_partner</code> once, in alphabetical order.', hint: 'DISTINCT plus ORDER BY.', solution: 'SELECT DISTINCT city FROM res_partner ORDER BY city;' },
+    { title: 'Page two', diff: 'Medium', ordered: true, tables: ['sale_order'], prompt: 'Orders are listed 5 per page, sorted by <code>date_order</code> then <code>id</code>. Return <code>name</code> and <code>date_order</code> for page 2.', hint: 'Page 2 skips the first 5 rows.', solution: 'SELECT name, date_order FROM sale_order ORDER BY date_order, id LIMIT 5 OFFSET 5;' },
+  ]
+},
+{
+  id: 'expr', title: 'Expressions & Functions', cmds: 'CASE · COALESCE · ROUND · || · dates', parents: ['filter', 'sort'],
+  summary: 'Transform values as you read them: arithmetic, string and date functions, conditional logic, and NULL handling.',
+  lesson: [
+    { h: 'Arithmetic and integer division', p: 'Dividing two integers gives an integer in SQLite and PostgreSQL. Make one side a decimal to keep the fraction.', code: 'SELECT 7 / 2 AS int_div, 7 / 2.0 AS real_div, 7 % 2 AS remainder;' },
+    { h: 'Text functions', p: '<code>UPPER</code>, <code>LOWER</code>, <code>LENGTH</code>, <code>SUBSTR(s, start, len)</code>, <code>TRIM</code>, <code>REPLACE</code>. <code>||</code> concatenates.', code: "SELECT UPPER(name) AS loud,\n       LENGTH(name) AS chars,\n       SUBSTR(name, 1, 3) AS short,\n       name || ' (' || city || ')' AS label\nFROM res_partner;" },
+    { h: 'Numbers', p: '<code>ROUND(x, digits)</code>, <code>ABS</code>, and <code>CAST(x AS type)</code> to convert.', code: 'SELECT name, ROUND(cost * 100.0 / list_price, 1) AS cost_pct\nFROM product_product;' },
+    { h: 'CASE', p: 'SQL\'s if/else. The first matching <code>WHEN</code> wins; <code>ELSE</code> covers the rest (NULL if you leave it out).', code: "SELECT name, salary,\n  CASE WHEN salary >= 9000 THEN 'senior'\n       WHEN salary >= 5000 THEN 'mid'\n       ELSE 'junior' END AS band\nFROM hr_employee;" },
+    { h: 'COALESCE and NULLIF', p: '<code>COALESCE(a, b, …)</code> returns the first non-NULL argument. <code>NULLIF(a, b)</code> returns NULL when a = b, handy to avoid dividing by zero.', code: "SELECT name, COALESCE(email, 'n/a') AS email FROM hr_employee;\n\nSELECT 10 / NULLIF(0, 0) AS safe_division;" },
+    { h: 'Dates', p: 'SQLite stores dates as ISO text. <code>date(\'now\')</code>, <code>strftime(\'%Y\', d)</code> extracts parts, <code>julianday(a) - julianday(b)</code> gives days between.', code: "SELECT name, hire_date,\n       strftime('%Y', hire_date) AS year,\n       CAST(julianday('2026-10-13') - julianday(hire_date) AS INTEGER) AS days_employed\nFROM hr_employee;", pg: 'PostgreSQL has a real <code>DATE</code> type: <code>EXTRACT(YEAR FROM hire_date)</code>, <code>CURRENT_DATE - hire_date</code> (days), <code>hire_date + INTERVAL \'1 month\'</code>, <code>DATE_TRUNC(\'month\', d)</code>.' },
+  ],
+  problems: [
+    { title: 'Shout the departments', diff: 'Easy', checkCols: true, tables: ['hr_department'], prompt: 'Return each department name in capitals, in a column named <code>name_upper</code>.', hint: 'UPPER(…) AS name_upper', solution: 'SELECT UPPER(name) AS name_upper FROM hr_department;' },
+    { title: 'Hire year', diff: 'Easy', tables: ['hr_employee'], prompt: 'Return each employee\'s <code>name</code> and the year they were hired.', hint: "strftime('%Y', hire_date)", solution: "SELECT name, strftime('%Y', hire_date) AS hire_year FROM hr_employee;" },
+    { title: 'Contact fallback', diff: 'Easy', checkCols: true, tables: ['res_partner'], prompt: 'Return <code>name</code> and a column <code>contact</code> that holds the partner\'s email, or the text <code>no email</code> when it is missing.', hint: 'COALESCE picks the first non-NULL value.', solution: "SELECT name, COALESCE(email, 'no email') AS contact FROM res_partner;" },
+    { title: 'Price bands', diff: 'Medium', tables: ['product_product'], prompt: 'Return each product\'s <code>name</code> and a band: <code>budget</code> under 100, <code>standard</code> from 100 up to (not including) 500, <code>premium</code> otherwise.', hint: 'CASE checks WHEN branches top to bottom.', solution: "SELECT name,\n  CASE WHEN list_price < 100 THEN 'budget'\n       WHEN list_price < 500 THEN 'standard'\n       ELSE 'premium' END AS band\nFROM product_product;" },
+    { title: 'Line totals', diff: 'Medium', tables: ['sale_order_line'], prompt: 'For each order line return <code>id</code> and its total: <code>qty × price_unit</code> reduced by <code>discount</code> percent, rounded to 2 decimals.', hint: 'discount is an integer, so divide by 100.0, not 100.', solution: 'SELECT id, ROUND(qty * price_unit * (1 - discount / 100.0), 2) AS total\nFROM sale_order_line;' },
+  ]
+},
+{
+  id: 'agg', title: 'Aggregation', cmds: 'COUNT · SUM · AVG · GROUP BY · HAVING', parents: ['expr'],
+  summary: 'Collapse many rows into one number, or one number per group. This is where reporting starts.',
+  lesson: [
+    { h: 'Aggregate functions', p: '<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> turn a whole set of rows into a single row.', code: 'SELECT COUNT(*) AS people, SUM(salary) AS payroll,\n       ROUND(AVG(salary), 2) AS avg_salary,\n       MIN(salary) AS lowest, MAX(salary) AS highest\nFROM hr_employee;' },
+    { h: 'Three kinds of COUNT', p: '<code>COUNT(*)</code> counts rows. <code>COUNT(col)</code> skips NULLs in that column. <code>COUNT(DISTINCT col)</code> counts different values.', code: 'SELECT COUNT(*), COUNT(email), COUNT(DISTINCT job_title)\nFROM hr_employee;' },
+    { h: 'GROUP BY', p: '<code>GROUP BY</code> splits the rows into groups and runs the aggregate once per group. Every column in <code>SELECT</code> must be either grouped or aggregated.', code: 'SELECT state, COUNT(*) AS orders\nFROM sale_order\nGROUP BY state;', pg: 'PostgreSQL rejects a selected column that is neither grouped nor aggregated. SQLite allows it and picks an arbitrary row, so do not rely on that habit.' },
+    { h: 'HAVING filters groups', p: '<code>WHERE</code> filters rows before grouping; <code>HAVING</code> filters groups after. Full order: <code>FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</code>.', code: "SELECT department_id, ROUND(AVG(salary)) AS avg_salary\nFROM hr_employee\nWHERE job_title <> 'Intern'\nGROUP BY department_id\nHAVING AVG(salary) > 6000;" },
+  ],
+  problems: [
+    { title: 'Headcount', diff: 'Easy', tables: ['hr_employee'], prompt: 'Return a single number: how many employees there are.', hint: 'COUNT(*)', solution: 'SELECT COUNT(*) FROM hr_employee;' },
+    { title: 'Staff per department', diff: 'Easy', tables: ['hr_employee'], prompt: 'Return <code>department_id</code> and the number of employees for each value (employees without a department form their own group).', hint: 'GROUP BY department_id', solution: 'SELECT department_id, COUNT(*) FROM hr_employee GROUP BY department_id;' },
+    { title: 'Average salary by role', diff: 'Easy', tables: ['hr_employee'], prompt: 'Return each <code>job_title</code> and its average salary rounded to 2 decimals.', hint: 'ROUND(AVG(salary), 2)', solution: 'SELECT job_title, ROUND(AVG(salary), 2) FROM hr_employee GROUP BY job_title;' },
+    { title: 'Crowded categories', diff: 'Medium', tables: ['product_product'], prompt: 'Return <code>category</code> and product count for categories with more than 3 products.', hint: 'Filtering on an aggregate needs HAVING.', solution: 'SELECT category, COUNT(*) FROM product_product GROUP BY category HAVING COUNT(*) > 3;' },
+    { title: 'Customer reach', diff: 'Medium', tables: ['sale_order'], prompt: 'How many different partners have at least one order in state <code>sale</code> or <code>done</code>? Return one number.', hint: 'COUNT(DISTINCT …) after a WHERE.', solution: "SELECT COUNT(DISTINCT partner_id) FROM sale_order WHERE state IN ('sale', 'done');" },
+    { title: 'Sales by month', diff: 'Hard', ordered: true, tables: ['sale_order'], prompt: 'For confirmed orders (<code>sale</code> or <code>done</code>), return the month as <code>YYYY-MM</code> and the number of orders that month, in chronological order.', hint: "strftime('%Y-%m', date_order), then group by it.", solution: "SELECT strftime('%Y-%m', date_order) AS month, COUNT(*) AS orders\nFROM sale_order\nWHERE state IN ('sale', 'done')\nGROUP BY month\nORDER BY month;" },
+  ]
+},
+{
+  id: 'join', title: 'Joins', cmds: 'INNER · LEFT · self join', parents: ['expr'],
+  summary: 'Real data lives in many tables linked by ids. Joins put the pieces back together.',
+  lesson: [
+    { h: 'Foreign keys link tables', p: '<code>sale_order.partner_id</code> holds the <code>id</code> of a row in <code>res_partner</code>. ERP frameworks build every many-to-one field this way.', code: 'SELECT id, name, partner_id FROM sale_order LIMIT 4;' },
+    { h: 'INNER JOIN', p: 'Pairs each row of the left table with matching rows of the right table. Rows without a match disappear. Short table aliases keep the query readable.', code: 'SELECT o.name AS order_ref, p.name AS customer\nFROM sale_order o\nJOIN res_partner p ON p.id = o.partner_id;' },
+    { h: 'LEFT JOIN', p: 'Keeps every row of the left table. Where nothing matches, the right side is NULL. Here, Legal has no staff but still appears.', code: 'SELECT d.name, e.name AS employee\nFROM hr_department d\nLEFT JOIN hr_employee e ON e.department_id = d.id\nORDER BY d.id;' },
+    { h: 'Finding what is missing', p: 'A <code>LEFT JOIN</code> followed by <code>WHERE right.id IS NULL</code> returns the left rows that have no match. This is called an anti-join.', code: 'SELECT p.name\nFROM res_partner p\nLEFT JOIN sale_order o ON o.partner_id = p.id\nWHERE o.id IS NULL;' },
+    { h: 'Self join', p: 'A table can join to itself. Give each copy its own alias.', code: 'SELECT e.name, m.name AS manager\nFROM hr_employee e\nJOIN hr_employee m ON m.id = e.manager_id;' },
+    { h: 'Many tables', p: 'Chain joins to walk from one table to the next.', code: 'SELECT o.name, p.name AS customer, pr.name AS product, l.qty\nFROM sale_order_line l\nJOIN sale_order o ON o.id = l.order_id\nJOIN res_partner p ON p.id = o.partner_id\nJOIN product_product pr ON pr.id = l.product_id\nLIMIT 6;', pg: '<code>RIGHT JOIN</code> and <code>FULL OUTER JOIN</code> exist in PostgreSQL (and SQLite 3.39+). <code>CROSS JOIN</code> pairs every row with every row. With a <code>LEFT JOIN</code>, a condition on the right table belongs in <code>ON</code>; putting it in <code>WHERE</code> turns it back into an inner join.' },
+  ],
+  problems: [
+    { title: 'Employee departments', diff: 'Easy', tables: ['hr_employee', 'hr_department'], prompt: 'Return each employee\'s <code>name</code> and the <code>name</code> of their department. Employees without a department are left out.', hint: 'INNER JOIN on department_id.', solution: 'SELECT e.name, d.name\nFROM hr_employee e\nJOIN hr_department d ON d.id = e.department_id;' },
+    { title: 'Headcount for every department', diff: 'Medium', tables: ['hr_department', 'hr_employee'], prompt: 'Return every department\'s <code>name</code> and how many employees it has. Departments with nobody show 0.', hint: 'LEFT JOIN, then COUNT(e.id), not COUNT(*).', solution: 'SELECT d.name, COUNT(e.id)\nFROM hr_department d\nLEFT JOIN hr_employee e ON e.department_id = d.id\nGROUP BY d.id, d.name;' },
+    { title: 'Never sold', diff: 'Medium', tables: ['product_product', 'sale_order_line'], prompt: 'Return the <code>name</code> of products that appear on no order line.', hint: 'Anti-join: LEFT JOIN … WHERE l.id IS NULL.', solution: 'SELECT p.name\nFROM product_product p\nLEFT JOIN sale_order_line l ON l.product_id = p.id\nWHERE l.id IS NULL;' },
+    { title: 'Who is your manager', diff: 'Medium', tables: ['hr_employee'], prompt: 'Return every employee\'s <code>name</code> and their manager\'s <code>name</code>. The CEO has no manager and must still appear, with NULL.', hint: 'Self join, LEFT so nobody is dropped.', solution: 'SELECT e.name, m.name AS manager\nFROM hr_employee e\nLEFT JOIN hr_employee m ON m.id = e.manager_id;' },
+    { title: 'Revenue by customer', diff: 'Hard', ordered: true, tables: ['res_partner', 'sale_order', 'sale_order_line'], prompt: 'For orders in state <code>sale</code> or <code>done</code>, return partner <code>name</code> and total revenue (<code>qty × price_unit × (1 − discount/100)</code>, rounded to 2), highest revenue first.', hint: 'Join three tables, filter, GROUP BY the partner, ORDER BY the sum.', solution: "SELECT p.name, ROUND(SUM(l.qty * l.price_unit * (1 - l.discount / 100.0)), 2) AS revenue\nFROM sale_order o\nJOIN res_partner p ON p.id = o.partner_id\nJOIN sale_order_line l ON l.order_id = o.id\nWHERE o.state IN ('sale', 'done')\nGROUP BY p.id, p.name\nORDER BY revenue DESC;" },
+  ]
+},
+{
+  id: 'sub', title: 'Subqueries', cmds: 'IN (…) · EXISTS · correlated', parents: ['agg', 'join'],
+  summary: 'A query inside a query. Use one result to filter, compare against, or build another.',
+  lesson: [
+    { h: 'Scalar subquery', p: 'A subquery that returns one value can stand anywhere a value can.', code: 'SELECT name, salary\nFROM hr_employee\nWHERE salary > (SELECT AVG(salary) FROM hr_employee);' },
+    { h: 'IN with a subquery', p: 'Test membership in a list produced by another query.', code: "SELECT name FROM res_partner\nWHERE id IN (SELECT partner_id FROM sale_order WHERE state = 'done');", pg: '<code>NOT IN (subquery)</code> returns nothing if the subquery contains a single NULL. Prefer <code>NOT EXISTS</code> for “has no match”.' },
+    { h: 'EXISTS and NOT EXISTS', p: 'True if the subquery returns at least one row. The selected columns do not matter, so people write <code>SELECT 1</code>.', code: 'SELECT d.name FROM hr_department d\nWHERE NOT EXISTS (SELECT 1 FROM hr_employee e WHERE e.department_id = d.id);' },
+    { h: 'Correlated subquery', p: 'The inner query refers to the outer row, so it runs once per outer row.', code: 'SELECT e.name, e.department_id, e.salary\nFROM hr_employee e\nWHERE e.salary > (SELECT AVG(salary) FROM hr_employee x\n                  WHERE x.department_id = e.department_id);' },
+    { h: 'Subquery in FROM', p: 'A subquery in <code>FROM</code> acts as a temporary table (a derived table). Give it an alias.', code: 'SELECT ROUND(AVG(lines), 2) AS avg_lines_per_order\nFROM (SELECT order_id, COUNT(*) AS lines\n      FROM sale_order_line GROUP BY order_id) t;' },
+  ],
+  problems: [
+    { title: 'Above average', diff: 'Easy', tables: ['hr_employee'], prompt: 'Return <code>name</code> and <code>salary</code> of employees who earn more than the company average.', hint: 'Compare with (SELECT AVG(salary) …).', solution: 'SELECT name, salary FROM hr_employee WHERE salary > (SELECT AVG(salary) FROM hr_employee);' },
+    { title: 'Partners who ordered', diff: 'Easy', tables: ['res_partner', 'sale_order'], prompt: 'Return the <code>name</code> of partners with at least one order, in any state. Each partner once.', hint: 'WHERE id IN (SELECT partner_id …) or EXISTS.', solution: 'SELECT name FROM res_partner WHERE id IN (SELECT partner_id FROM sale_order);' },
+    { title: 'Top earner per department', diff: 'Medium', tables: ['hr_employee'], prompt: 'Return <code>name</code>, <code>department_id</code> and <code>salary</code> of the highest-paid employee in each department. Ignore employees without a department.', hint: 'Correlated: salary = (SELECT MAX(salary) … WHERE same department).', solution: 'SELECT name, department_id, salary\nFROM hr_employee e\nWHERE salary = (SELECT MAX(salary) FROM hr_employee x WHERE x.department_id = e.department_id);' },
+    { title: 'Average order size', diff: 'Medium', tables: ['sale_order_line'], prompt: 'Return one number: the average count of lines per order, rounded to 2 decimals.', hint: 'Count lines per order in a subquery in FROM, then average.', solution: 'SELECT ROUND(AVG(n), 2)\nFROM (SELECT order_id, COUNT(*) AS n FROM sale_order_line GROUP BY order_id);' },
+  ]
+},
+{
+  id: 'set', title: 'Set Operations', cmds: 'UNION · INTERSECT · EXCEPT', parents: ['join'],
+  summary: 'Stack the results of two queries, or keep what they share, or what one has that the other lacks.',
+  lesson: [
+    { h: 'UNION and UNION ALL', p: 'Stacks two results. <code>UNION</code> removes duplicates; <code>UNION ALL</code> keeps them and is faster. Both sides need the same number of columns with compatible types.', code: "SELECT city FROM res_partner WHERE country = 'Morocco'\nUNION\nSELECT 'Rabat';\n\nSELECT 'employee' AS kind, name FROM hr_employee\nUNION ALL\nSELECT 'partner', name FROM res_partner;" },
+    { h: 'INTERSECT', p: 'Rows that appear in both results.', code: 'SELECT product_id FROM sale_order_line WHERE order_id = 1\nINTERSECT\nSELECT product_id FROM sale_order_line WHERE order_id = 8;' },
+    { h: 'EXCEPT', p: 'Rows in the first result that are not in the second.', code: 'SELECT id FROM product_product\nEXCEPT\nSELECT product_id FROM sale_order_line;', pg: 'An <code>ORDER BY</code> at the very end sorts the combined result. Oracle calls <code>EXCEPT</code> <code>MINUS</code>.' },
+  ],
+  problems: [
+    { title: 'One address book', diff: 'Easy', tables: ['hr_employee', 'res_partner'], prompt: 'Return every distinct, non-NULL email from employees and partners in a single column.', hint: 'UNION removes duplicates; filter NULLs on both sides.', solution: 'SELECT email FROM hr_employee WHERE email IS NOT NULL\nUNION\nSELECT email FROM res_partner WHERE email IS NOT NULL;' },
+    { title: 'Sold and pricey', diff: 'Medium', tables: ['sale_order_line', 'product_product'], prompt: 'Return the product ids that have been sold at least once and have a <code>list_price</code> above 300.', hint: 'INTERSECT two id lists.', solution: 'SELECT product_id FROM sale_order_line\nINTERSECT\nSELECT id FROM product_product WHERE list_price > 300;' },
+    { title: 'Idle sales staff', diff: 'Medium', tables: ['hr_employee', 'sale_order'], prompt: 'Return the ids of employees in department 2 (Sales) who are not the salesperson on any order.', hint: 'Sales staff ids EXCEPT salesperson ids.', solution: 'SELECT id FROM hr_employee WHERE department_id = 2\nEXCEPT\nSELECT salesperson_id FROM sale_order;' },
+  ]
+},
+{
+  id: 'cte', title: 'CTEs & Recursion', cmds: 'WITH · WITH RECURSIVE', parents: ['sub', 'set'],
+  summary: 'Name a subquery and read the query top to bottom. Recursive CTEs walk hierarchies like an org chart.',
+  lesson: [
+    { h: 'WITH', p: 'A common table expression names a result you can use below it as if it were a table. It reads like a list of steps.', code: 'WITH order_totals AS (\n  SELECT order_id, SUM(qty * price_unit) AS total\n  FROM sale_order_line\n  GROUP BY order_id\n)\nSELECT o.name, t.total\nFROM order_totals t\nJOIN sale_order o ON o.id = t.order_id\nORDER BY t.total DESC;' },
+    { h: 'Several CTEs', p: 'Separate them with commas. Each one can use the ones above it.', code: "WITH confirmed AS (\n  SELECT * FROM sale_order WHERE state IN ('sale', 'done')\n), per_rep AS (\n  SELECT salesperson_id, COUNT(*) AS n FROM confirmed GROUP BY salesperson_id\n)\nSELECT e.name, p.n\nFROM per_rep p JOIN hr_employee e ON e.id = p.salesperson_id;" },
+    { h: 'WITH RECURSIVE', p: 'An anchor query produces the first rows; a recursive part joins back to the CTE to produce the next ones, until it returns nothing.', code: 'WITH RECURSIVE n(x) AS (\n  SELECT 1\n  UNION ALL\n  SELECT x * 2 FROM n WHERE x < 500\n)\nSELECT x FROM n;' },
+    { h: 'Walking a hierarchy', p: 'Start at the CEO, then repeatedly add people whose manager is already in the result.', code: 'WITH RECURSIVE chain(id, name, depth) AS (\n  SELECT id, name, 0 FROM hr_employee WHERE manager_id IS NULL\n  UNION ALL\n  SELECT e.id, e.name, c.depth + 1\n  FROM hr_employee e JOIN chain c ON e.manager_id = c.id\n)\nSELECT depth, name FROM chain ORDER BY depth, name;', pg: 'ERPs store hierarchies such as product categories with a <code>parent_path</code> column so most lookups avoid recursion, but recursive CTEs are still a common interview question.' },
+  ],
+  problems: [
+    { title: 'Count to ten', diff: 'Easy', ordered: true, tables: [], prompt: 'Return the numbers 1 to 10 in one column, in order, using a recursive CTE.', hint: 'Anchor SELECT 1, recursive part x + 1 WHERE x < 10.', solution: 'WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM n WHERE x < 10)\nSELECT x FROM n;' },
+    { title: 'Large orders', diff: 'Medium', tables: ['sale_order', 'sale_order_line'], prompt: 'Using a CTE of order totals (<code>qty × price_unit × (1 − discount/100)</code>), return order <code>name</code> and total rounded to 2 for orders whose total exceeds 1000.', hint: 'WITH totals AS (…GROUP BY order_id) then JOIN sale_order.', solution: 'WITH totals AS (\n  SELECT order_id, SUM(qty * price_unit * (1 - discount / 100.0)) AS total\n  FROM sale_order_line GROUP BY order_id\n)\nSELECT o.name, ROUND(t.total, 2)\nFROM totals t JOIN sale_order o ON o.id = t.order_id\nWHERE t.total > 1000;' },
+    { title: 'Payroll share', diff: 'Medium', tables: ['hr_employee', 'hr_department'], prompt: 'For each department with staff, return its <code>name</code>, total salary, and that total as a percentage of the whole company payroll rounded to 1 decimal. Count employees without a department in the company total.', hint: 'One CTE per department, one for the grand total.', solution: 'WITH dept AS (\n  SELECT department_id, SUM(salary) AS payroll FROM hr_employee GROUP BY department_id\n), total AS (SELECT SUM(salary) AS s FROM hr_employee)\nSELECT d.name, dept.payroll, ROUND(100.0 * dept.payroll / total.s, 1)\nFROM dept JOIN hr_department d ON d.id = dept.department_id, total;' },
+    { title: 'Sara\'s whole team', diff: 'Hard', ordered: true, tables: ['hr_employee'], prompt: 'Return <code>name</code> and <code>level</code> of everyone who reports to Sara Alami (id 2), directly (level 1) or indirectly (level 2, 3…). Sort by level, then name.', hint: 'Anchor: employees with manager_id = 2 at level 1.', solution: 'WITH RECURSIVE team(id, name, level) AS (\n  SELECT id, name, 1 FROM hr_employee WHERE manager_id = 2\n  UNION ALL\n  SELECT e.id, e.name, t.level + 1 FROM hr_employee e JOIN team t ON e.manager_id = t.id\n)\nSELECT name, level FROM team ORDER BY level, name;' },
+  ]
+},
+{
+  id: 'window', title: 'Window Functions', cmds: 'OVER · PARTITION BY · RANK · LAG', parents: ['sub'],
+  summary: 'Compute across related rows without collapsing them: rankings, running totals, and previous/next values.',
+  lesson: [
+    { h: 'Aggregates that keep the rows', p: 'Add <code>OVER ()</code> to an aggregate and every row keeps its identity while also seeing the aggregate.', code: 'SELECT name, salary, ROUND(AVG(salary) OVER ()) AS company_avg\nFROM hr_employee;' },
+    { h: 'PARTITION BY', p: 'Splits the window into groups, like <code>GROUP BY</code>, but without merging rows.', code: 'SELECT name, department_id, salary,\n       MAX(salary) OVER (PARTITION BY department_id) AS dept_max\nFROM hr_employee;' },
+    { h: 'ROW_NUMBER, RANK, DENSE_RANK', p: 'All three number rows by the window\'s <code>ORDER BY</code>. On ties: <code>ROW_NUMBER</code> still counts 1, 2, 3; <code>RANK</code> gives 1, 1, 3; <code>DENSE_RANK</code> gives 1, 1, 2.', code: 'SELECT name, salary,\n  ROW_NUMBER() OVER (ORDER BY salary) AS rn,\n  RANK()       OVER (ORDER BY salary) AS rnk,\n  DENSE_RANK() OVER (ORDER BY salary) AS dense\nFROM hr_employee WHERE department_id = 4;' },
+    { h: 'Running totals', p: 'With an <code>ORDER BY</code> inside <code>OVER</code>, <code>SUM</code> adds up everything from the first row to the current one.', code: 'SELECT date_order, name,\n  COUNT(*) OVER (ORDER BY date_order, id) AS orders_so_far\nFROM sale_order;' },
+    { h: 'LAG and LEAD', p: 'Read a value from the previous or next row in the window.', code: 'SELECT name, date_order,\n  LAG(date_order) OVER (ORDER BY date_order) AS previous,\n  LEAD(date_order) OVER (ORDER BY date_order) AS next\nFROM sale_order;' },
+    { h: 'Filtering on a window', p: 'Window functions run after <code>WHERE</code>, so you cannot filter on them directly. Compute them in a CTE, then filter. This is the classic “top N per group” pattern.', code: 'WITH ranked AS (\n  SELECT name, category, list_price,\n    ROW_NUMBER() OVER (PARTITION BY category ORDER BY list_price DESC) AS rn\n  FROM product_product\n)\nSELECT category, name, list_price FROM ranked WHERE rn = 1;' },
+  ],
+  problems: [
+    { title: 'Rank by salary', diff: 'Easy', tables: ['hr_employee'], prompt: 'Return <code>name</code>, <code>salary</code> and <code>RANK()</code> by salary, highest = 1.', hint: 'RANK() OVER (ORDER BY salary DESC)', solution: 'SELECT name, salary, RANK() OVER (ORDER BY salary DESC) FROM hr_employee;' },
+    { title: 'Rank inside the department', diff: 'Medium', tables: ['hr_employee'], prompt: 'Return <code>name</code>, <code>department_id</code>, <code>salary</code> and a dense rank of salary within the department, highest = 1.', hint: 'DENSE_RANK() OVER (PARTITION BY … ORDER BY … DESC)', solution: 'SELECT name, department_id, salary,\n  DENSE_RANK() OVER (PARTITION BY department_id ORDER BY salary DESC)\nFROM hr_employee;' },
+    { title: 'Previous order date', diff: 'Medium', ordered: true, tables: ['sale_order'], prompt: 'Return every order\'s <code>name</code>, <code>date_order</code>, and the date of the order placed just before it (NULL for the first). Sort by date.', hint: 'LAG(date_order) OVER (ORDER BY date_order)', solution: 'SELECT name, date_order, LAG(date_order) OVER (ORDER BY date_order) AS prev_date\nFROM sale_order ORDER BY date_order;' },
+    { title: 'Priciest per category', diff: 'Medium', tables: ['product_product'], prompt: 'Return <code>category</code> and <code>name</code> of the most expensive product in each category, using a window function.', hint: 'ROW_NUMBER in a CTE, then WHERE rn = 1.', solution: 'WITH r AS (\n  SELECT category, name, ROW_NUMBER() OVER (PARTITION BY category ORDER BY list_price DESC) AS rn\n  FROM product_product\n)\nSELECT category, name FROM r WHERE rn = 1;' },
+    { title: 'Running revenue', diff: 'Hard', ordered: true, tables: ['sale_order', 'sale_order_line'], prompt: 'For confirmed orders (<code>sale</code>, <code>done</code>) sorted by <code>date_order</code>, return <code>name</code>, the order total (<code>qty × price_unit × (1 − discount/100)</code>, rounded to 2) and the running total of revenue so far (rounded to 2).', hint: 'CTE of totals, then SUM(total) OVER (ORDER BY date_order).', solution: "WITH t AS (\n  SELECT o.id, o.name, o.date_order, SUM(l.qty * l.price_unit * (1 - l.discount / 100.0)) AS total\n  FROM sale_order o JOIN sale_order_line l ON l.order_id = o.id\n  WHERE o.state IN ('sale', 'done')\n  GROUP BY o.id\n)\nSELECT name, ROUND(total, 2), ROUND(SUM(total) OVER (ORDER BY date_order, id), 2)\nFROM t ORDER BY date_order, id;" },
+  ]
+},
+{
+  id: 'dml', title: 'Changing Data', cmds: 'INSERT · UPDATE · DELETE · UPSERT', parents: ['cte'],
+  summary: 'Add, change and remove rows. Every exercise here runs on a fresh copy of the database, so experiment freely.',
+  lesson: [
+    { h: 'INSERT', p: 'Name the columns, then give the values in the same order. Columns you leave out get their default or NULL.', code: "INSERT INTO res_partner (id, name, city, country, is_company)\nVALUES (11, 'Agadir Surf Shop', 'Agadir', 'Morocco', 1);\n\nSELECT * FROM res_partner WHERE id = 11;" },
+    { h: 'Several rows, or rows from a query', p: 'Separate value lists with commas, or use <code>INSERT … SELECT</code> to copy rows produced by a query.', code: "INSERT INTO hr_department (id, name, budget) VALUES (6, 'Marketing', 70000), (7, 'Finance', 90000);\n\nINSERT INTO hr_department (id, name, budget)\nSELECT 8, name || ' Archive', 0 FROM hr_department WHERE id = 5;\n\nSELECT * FROM hr_department;" },
+    { h: 'UPDATE', p: '<code>SET</code> new values on the rows that match <code>WHERE</code>. Run the same <code>WHERE</code> as a <code>SELECT</code> first to see what you will change.', code: "UPDATE product_product\nSET list_price = list_price * 1.05\nWHERE category = 'Office';\n\nSELECT name, list_price FROM product_product WHERE category = 'Office';" },
+    { h: 'DELETE', p: 'Removes the rows that match. Without a <code>WHERE</code> it removes every row in the table.', code: "DELETE FROM sale_order WHERE state = 'draft';\n\nSELECT state, COUNT(*) FROM sale_order GROUP BY state;" },
+    { h: 'RETURNING', p: 'Get the affected rows back from the same statement.', code: "UPDATE hr_employee SET salary = salary + 300 WHERE job_title = 'Support Agent'\nRETURNING name, salary;" },
+    { h: 'UPSERT', p: '<code>ON CONFLICT</code> turns a failing insert into an update (or into nothing). <code>excluded</code> holds the row you tried to insert.', code: "INSERT INTO product_product (id, name, category, list_price, cost)\nVALUES (3, 'Desk Lamp', 'Office', 45, 15)\nON CONFLICT(id) DO UPDATE SET list_price = excluded.list_price;\n\nSELECT * FROM product_product WHERE id = 3;", pg: 'PostgreSQL uses the same <code>ON CONFLICT … DO UPDATE / DO NOTHING</code> syntax and also supports <code>RETURNING</code>. In an ERP ORM, <code>create()</code>, <code>write()</code> and <code>unlink()</code> generate these statements for you.' },
+  ],
+  problems: [
+    { title: 'Hire a developer', diff: 'Easy', type: 'mutate', tables: ['hr_employee'], prompt: 'Add employee id <code>15</code>: <code>Yassine Haddad</code>, job <code>Developer</code>, department 3, manager 4, salary 5200, hired <code>2026-10-01</code>, email <code>yassine.haddad@erp-demo.ma</code>.', check: 'SELECT * FROM hr_employee WHERE id = 15;', hint: 'INSERT INTO hr_employee (…) VALUES (…);', solution: "INSERT INTO hr_employee (id, name, job_title, department_id, manager_id, salary, hire_date, email)\nVALUES (15, 'Yassine Haddad', 'Developer', 3, 4, 5200, '2026-10-01', 'yassine.haddad@erp-demo.ma');" },
+    { title: 'Raise for R&D', diff: 'Easy', type: 'mutate', tables: ['hr_employee'], prompt: 'Give everyone in department 3 a 10% raise. Nobody else changes.', check: 'SELECT id, salary FROM hr_employee ORDER BY id;', hint: 'UPDATE … SET salary = salary * 1.1 WHERE …', solution: 'UPDATE hr_employee SET salary = salary * 1.1 WHERE department_id = 3;' },
+    { title: 'Clear cancelled orders', diff: 'Medium', type: 'mutate', tables: ['sale_order', 'sale_order_line'], prompt: 'Delete every cancelled order and its order lines. Lines must not be left pointing at deleted orders.', check: 'SELECT (SELECT COUNT(*) FROM sale_order) AS orders, (SELECT COUNT(*) FROM sale_order_line) AS lines, (SELECT group_concat(id) FROM sale_order) AS ids;', hint: 'Delete the lines first, using a subquery on sale_order.', solution: "DELETE FROM sale_order_line WHERE order_id IN (SELECT id FROM sale_order WHERE state = 'cancel');\nDELETE FROM sale_order WHERE state = 'cancel';" },
+    { title: 'Catalog sync', diff: 'Medium', type: 'mutate', tables: ['product_product'], prompt: 'In one <code>INSERT</code> statement, write two products: id 4 (<code>Monitor 27 inch</code>, Electronics, price 299, cost 250) which already exists and must have its price updated, and id 11 (<code>Monitor Arm</code>, Office, price 89, cost 40), which is new.', check: 'SELECT * FROM product_product WHERE id IN (4, 11) ORDER BY id;', hint: 'INSERT … VALUES (…), (…) ON CONFLICT(id) DO UPDATE SET list_price = excluded.list_price', solution: "INSERT INTO product_product (id, name, category, list_price, cost)\nVALUES (4, 'Monitor 27 inch', 'Electronics', 299, 250), (11, 'Monitor Arm', 'Office', 89, 40)\nON CONFLICT(id) DO UPDATE SET list_price = excluded.list_price;" },
+  ]
+},
+{
+  id: 'ddl', title: 'Defining Tables', cmds: 'CREATE · ALTER · DROP · INDEX · VIEW', parents: ['window'],
+  summary: 'Design the structure that holds the data: tables, constraints, indexes and views.',
+  lesson: [
+    { h: 'CREATE TABLE', p: 'Each column has a name, a type and optional constraints.', code: "CREATE TABLE project_task (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL,\n  priority INTEGER DEFAULT 0 CHECK (priority BETWEEN 0 AND 3),\n  user_id INTEGER REFERENCES hr_employee(id),\n  code TEXT UNIQUE\n);\nINSERT INTO project_task (id, name, user_id) VALUES (1, 'Install the ERP', 5);\nSELECT * FROM project_task;" },
+    { h: 'Constraints', p: 'They protect your data from bad writes.', list: ['<code>PRIMARY KEY</code>: unique, non-NULL row identifier', '<code>NOT NULL</code>: a value is required', '<code>UNIQUE</code>: no two rows share the value', '<code>DEFAULT</code>: value used when the insert leaves it out', '<code>CHECK (…)</code>: any boolean rule', '<code>REFERENCES t(col)</code>: a foreign key to another table'], code: "CREATE TABLE t (id INTEGER PRIMARY KEY, qty INTEGER CHECK (qty > 0));\nINSERT INTO t VALUES (1, -5); -- fails: CHECK constraint" },
+    { h: 'ALTER TABLE', p: 'Change an existing table: add a column, rename a column, rename the table.', code: 'ALTER TABLE res_partner ADD COLUMN vat TEXT;\nALTER TABLE res_partner RENAME COLUMN city TO town;\nSELECT id, name, town, vat FROM res_partner LIMIT 3;' },
+    { h: 'DROP', p: '<code>DROP TABLE</code> deletes the table and all its rows. <code>IF EXISTS</code> avoids an error when it is absent.', code: 'DROP TABLE IF EXISTS project_task;\nSELECT name FROM sqlite_master WHERE type = \'table\';' },
+    { h: 'Indexes', p: 'An index makes lookups on its columns fast, at the cost of slower writes and some space. Index the columns you filter and join on.', code: 'CREATE INDEX idx_line_product ON sale_order_line(product_id);\nEXPLAIN QUERY PLAN SELECT * FROM sale_order_line WHERE product_id = 4;' },
+    { h: 'Views', p: 'A view is a saved query you can select from like a table.', code: "CREATE VIEW employee_directory AS\n  SELECT e.name, e.job_title, d.name AS department\n  FROM hr_employee e LEFT JOIN hr_department d ON d.id = e.department_id;\nSELECT * FROM employee_directory WHERE department = 'R&D';", pg: 'In PostgreSQL write <code>id SERIAL PRIMARY KEY</code> or <code>GENERATED ALWAYS AS IDENTITY</code>, and use real types such as <code>VARCHAR(n)</code>, <code>NUMERIC(12,2)</code>, <code>BOOLEAN</code>, <code>DATE</code>, <code>TIMESTAMP</code>. <code>ALTER TABLE … ALTER COLUMN … TYPE</code> changes a type. ERP ORMs create and alter tables from your model fields, and report models are often SQL views.' },
+  ],
+  problems: [
+    { title: 'Create crm_lead', diff: 'Easy', type: 'mutate', tables: [], prompt: 'Create table <code>crm_lead</code> with: <code>id</code> integer primary key, <code>name</code> text that is required, <code>partner_id</code> integer referencing <code>res_partner(id)</code>, <code>expected_revenue</code> real defaulting to 0, and <code>stage</code> text. Columns in that order.', check: 'SELECT name, pk, "notnull" FROM pragma_table_info(\'crm_lead\') ORDER BY cid;', hint: 'NOT NULL on name, DEFAULT 0 on expected_revenue.', solution: 'CREATE TABLE crm_lead (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL,\n  partner_id INTEGER REFERENCES res_partner(id),\n  expected_revenue REAL DEFAULT 0,\n  stage TEXT\n);' },
+    { title: 'Add a phone column', diff: 'Easy', type: 'mutate', tables: ['res_partner'], prompt: 'Add a text column <code>phone</code> to <code>res_partner</code>, then set it to <code>+212 522 000 111</code> for Atlas Logistics (id 1).', check: 'SELECT id, phone FROM res_partner ORDER BY id;', hint: 'ALTER TABLE … ADD COLUMN, then UPDATE.', solution: "ALTER TABLE res_partner ADD COLUMN phone TEXT;\nUPDATE res_partner SET phone = '+212 522 000 111' WHERE id = 1;" },
+    { title: 'Confirmed orders view', diff: 'Medium', type: 'mutate', tables: ['sale_order'], prompt: 'Create a view <code>confirmed_order</code> that shows all columns of orders in state <code>sale</code> or <code>done</code>.', check: 'SELECT id, name, state FROM confirmed_order ORDER BY id;', hint: 'CREATE VIEW name AS SELECT …', solution: "CREATE VIEW confirmed_order AS SELECT * FROM sale_order WHERE state IN ('sale', 'done');" },
+    { title: 'Index the customer lookup', diff: 'Medium', type: 'mutate', tables: ['sale_order'], prompt: 'Create an index named <code>idx_sale_order_partner</code> on <code>sale_order(partner_id)</code>.', check: "SELECT m.name, m.tbl_name, i.name AS col FROM sqlite_master m, pragma_index_info(m.name) i WHERE m.type = 'index' AND m.name = 'idx_sale_order_partner';", hint: 'CREATE INDEX name ON table(column);', solution: 'CREATE INDEX idx_sale_order_partner ON sale_order(partner_id);' },
+  ]
+},
+{
+  id: 'tx', title: 'Transactions', cmds: 'BEGIN · COMMIT · ROLLBACK · SAVEPOINT', parents: ['dml', 'ddl'],
+  summary: 'Group changes so they all happen or none do. The last command set, and one interviewers love to ask about.',
+  lesson: [
+    { h: 'All or nothing', p: 'A transaction is a group of statements the database treats as one unit. ACID: <b>A</b>tomic (all or nothing), <b>C</b>onsistent (constraints hold), <b>I</b>solated (others do not see half-done work), <b>D</b>urable (committed data survives a crash).', code: 'BEGIN;\nUPDATE hr_department SET budget = budget - 5000 WHERE id = 1;\nUPDATE hr_department SET budget = budget + 5000 WHERE id = 4;\nCOMMIT;\n\nSELECT id, name, budget FROM hr_department;' },
+    { h: 'ROLLBACK', p: 'Undo everything since <code>BEGIN</code>.', code: 'BEGIN;\nDELETE FROM sale_order_line;\nSELECT COUNT(*) AS during FROM sale_order_line;\nROLLBACK;\n\nSELECT COUNT(*) AS after FROM sale_order_line;' },
+    { h: 'SAVEPOINT', p: 'A named checkpoint inside a transaction. <code>ROLLBACK TO name</code> undoes the work after it but keeps the transaction open.', code: "BEGIN;\nUPDATE product_product SET list_price = list_price + 10;\nSAVEPOINT before_delete;\nDELETE FROM product_product WHERE category = 'Office';\nROLLBACK TO before_delete;\nCOMMIT;\n\nSELECT name, list_price FROM product_product;", pg: 'PostgreSQL\'s default isolation level is READ COMMITTED; you can raise it with <code>SET TRANSACTION ISOLATION LEVEL REPEATABLE READ</code> or <code>SERIALIZABLE</code>. A typical ERP runs each request in one transaction, commits at the end, and <code>with self.env.cr.savepoint():</code> wraps a SAVEPOINT.' },
+  ],
+  problems: [
+    { title: 'Budget transfer', diff: 'Medium', type: 'mutate', mustInclude: ['BEGIN', 'COMMIT'], tables: ['hr_department'], prompt: 'Inside one transaction (<code>BEGIN</code> … <code>COMMIT</code>), move 20000 of budget from R&amp;D (id 3) to Legal (id 5).', check: 'SELECT id, budget FROM hr_department ORDER BY id;', hint: 'Two UPDATEs between BEGIN and COMMIT.', solution: 'BEGIN;\nUPDATE hr_department SET budget = budget - 20000 WHERE id = 3;\nUPDATE hr_department SET budget = budget + 20000 WHERE id = 5;\nCOMMIT;' },
+    { title: 'Undo the mistake', diff: 'Medium', type: 'mutate', mustInclude: ['BEGIN', 'ROLLBACK'], tables: ['hr_employee'], prompt: 'Start a transaction, run <code>UPDATE hr_employee SET salary = 0;</code>, then roll it back so every salary is unchanged.', check: 'SELECT id, salary FROM hr_employee ORDER BY id;', hint: 'BEGIN; … ROLLBACK;', solution: 'BEGIN;\nUPDATE hr_employee SET salary = 0;\nROLLBACK;' },
+    { title: 'Keep half the work', diff: 'Hard', type: 'mutate', mustInclude: ['SAVEPOINT', 'ROLLBACK TO'], tables: ['product_product'], prompt: 'In one transaction: raise every product\'s <code>list_price</code> by 10%, set a savepoint, delete all Furniture products, roll back to the savepoint, then commit. The price rise stays; the products stay too.', check: 'SELECT id, ROUND(list_price, 2) FROM product_product ORDER BY id;', hint: 'BEGIN; UPDATE …; SAVEPOINT s; DELETE …; ROLLBACK TO s; COMMIT;', solution: "BEGIN;\nUPDATE product_product SET list_price = list_price * 1.1;\nSAVEPOINT s;\nDELETE FROM product_product WHERE category = 'Furniture';\nROLLBACK TO s;\nCOMMIT;" },
+  ]
+},
+];
+
+const ROWS = [['select'], ['filter', 'sort'], ['expr'], ['agg', 'join'], ['sub', 'set'], ['window', 'cte'], ['ddl', 'dml'], ['tx']];
+
+TOPICS.forEach((t, ti) => t.problems.forEach((p, i) => { p.id = t.id + '-' + (i + 1); p.topic = t.id; p.type = p.type || 'query'; }));
+/*DATA-END*/
+
+/* ---------- engine ---------- */
+let SQL = null, seedBytes = null, playDb = null, engineError = null;
+const TOPIC = Object.fromEntries(TOPICS.map((t, i) => [t.id, Object.assign(t, { n: i + 1 })]));
+const PROBLEMS = TOPICS.flatMap(t => t.problems);
+const PROB = Object.fromEntries(PROBLEMS.map(p => [p.id, p]));
+
+function freshDb() { return new SQL.Database(seedBytes); }
+function runSql(db, sql) {
+  try { const sets = db.exec(sql); return { ok: true, sets, changed: db.getRowsModified() }; }
+  catch (e) { return { ok: false, error: String(e.message || e) }; }
+}
+const lastSet = r => (r && r.ok && r.sets.length) ? r.sets[r.sets.length - 1] : null;
+
+function nv(v) {
+  if (v === null || v === undefined) return 'NULL';
+  if (typeof v === 'number' || (typeof v === 'string' && /^\s*-?\d+(\.\d+)?\s*$/.test(v))) {
+    return String(Math.round(Number(v) * 100) / 100);
+  }
+  return String(v);
+}
+function reference(p) {
+  const db = freshDb();
+  const r = p.type === 'mutate' ? (runSql(db, p.solution), runSql(db, p.check)) : runSql(db, p.solution);
+  db.close();
+  return r;
+}
+function judge(p, code) {
+  if (!code.trim()) return { pass: false, title: 'Nothing to run', msg: 'Write a query first.' };
+  const db = freshDb();
+  let r = runSql(db, code);
+  if (!r.ok) { db.close(); return { pass: false, title: 'Error', msg: r.error, error: true }; }
+  if (p.mustInclude) {
+    const up = code.toUpperCase().replace(/\s+/g, ' ');
+    const miss = p.mustInclude.filter(k => !up.includes(k));
+    if (miss.length) { db.close(); return { pass: false, title: 'Not quite', msg: 'This exercise is about ' + miss.join(' and ') + '. Use it in your answer.' }; }
+  }
+  if (p.type === 'mutate') {
+    r = runSql(db, p.check);
+    if (!r.ok) { db.close(); return { pass: false, title: 'Check failed', msg: 'The check query could not run on your database: ' + r.error }; }
+  }
+  db.close();
+  const ref = reference(p);
+  const mine = lastSet(r), want = lastSet(ref);
+  const out = { mine, want };
+  if (!mine) return Object.assign(out, { pass: false, title: 'Wrong answer', msg: p.type === 'mutate' ? 'The check query returned no rows. Did your statement create or change what was asked?' : 'Your SQL returned no result set. End with a SELECT.' });
+  if (!want) return Object.assign(out, { pass: false, title: 'Wrong answer', msg: 'Expected no rows.' });
+  if (mine.columns.length !== want.columns.length) return Object.assign(out, { pass: false, title: 'Wrong answer', msg: `Expected ${want.columns.length} column${want.columns.length > 1 ? 's' : ''}, got ${mine.columns.length}.` });
+  if (p.checkCols) {
+    const a = mine.columns.map(c => c.toLowerCase()), b = want.columns.map(c => c.toLowerCase());
+    if (a.join('|') !== b.join('|')) return Object.assign(out, { pass: false, title: 'Wrong answer', msg: `Column names should be: ${want.columns.join(', ')}.` });
+  }
+  if (mine.values.length !== want.values.length) return Object.assign(out, { pass: false, title: 'Wrong answer', msg: `Expected ${want.values.length} row${want.values.length === 1 ? '' : 's'}, got ${mine.values.length}.` });
+  let A = mine.values.map(row => row.map(nv).join('\u0001')), B = want.values.map(row => row.map(nv).join('\u0001'));
+  if (!p.ordered) { A = [...A].sort(); B = [...B].sort(); }
+  const bad = A.findIndex((x, i) => x !== B[i]);
+  if (bad >= 0) {
+    if (p.ordered) {
+      const sameSet = [...A].sort().join('\n') === [...B].sort().join('\n');
+      if (sameSet) return Object.assign(out, { pass: false, title: 'Wrong order', msg: 'You have the right rows, in the wrong order.', badRow: bad });
+      return Object.assign(out, { pass: false, title: 'Wrong answer', msg: `Row ${bad + 1} differs from the expected output.`, badRow: bad });
+    }
+    return Object.assign(out, { pass: false, title: 'Wrong answer', msg: 'Some rows differ from the expected output.' });
+  }
+  return Object.assign(out, { pass: true, title: 'Accepted', msg: 'Your output matches. Nice work.' });
+}
+
+/* ---------- persistence ---------- */
+/* Each learner has their own progress key, so two people can share one browser. */
+const PKEY = 'sqlpath:profiles';
+const DEFAULT_NAMES = { p1: 'Med', p2: 'Manar' };
+let profiles = { current: 'p1', list: [{ id: 'p1', name: 'Med' }, { id: 'p2', name: 'Manar' }] };
+try { const s = JSON.parse(localStorage.getItem(PKEY) || 'null'); if (s && s.list && s.list.length) profiles = s; } catch (e) {}
+// replace the old placeholder names, keep any name someone typed
+profiles.list.forEach(p => { if (/^Learner [12]$/.test(p.name) && DEFAULT_NAMES[p.id]) p.name = DEFAULT_NAMES[p.id]; });
+try { // carry progress from the single-learner version over to Learner 1
+  const old = localStorage.getItem('sqlpath:v1');
+  if (old && !localStorage.getItem('sqlpath:v1:p1')) { localStorage.setItem('sqlpath:v1:p1', old); localStorage.removeItem('sqlpath:v1'); }
+} catch (e) {}
+const progressKey = () => 'sqlpath:v1:' + profiles.current;
+const memStore = {};
+let store;
+function loadStore() {
+  store = memStore[profiles.current] || { solved: {}, code: {}, read: {} };
+  try { const s = JSON.parse(localStorage.getItem(progressKey()) || 'null'); if (s && s.solved) store = Object.assign({ solved: {}, code: {}, read: {} }, s); } catch (e) {}
+  memStore[profiles.current] = store;
+}
+function save() { try { localStorage.setItem(progressKey(), JSON.stringify(store)); } catch (e) {} }
+function saveProfiles() { try { localStorage.setItem(PKEY, JSON.stringify(profiles)); } catch (e) {} }
+loadStore();
+const currentProfile = () => profiles.list.find(p => p.id === profiles.current) || profiles.list[0];
+function switchLearner(id) { profiles.current = id; saveProfiles(); loadStore(); playDb && playDb.close(); playDb = null; render(); }
+function renderWho(editing) {
+  const box = $('#who'), cur = currentProfile();
+  if (editing) {
+    box.innerHTML = `<input id="who-name" maxlength="24" value="${esc(cur.name)}" aria-label="Learner name"><button class="btn small primary" type="button" id="who-save">Save</button>`;
+    const inp = $('#who-name'); inp.focus(); inp.select();
+    const done = () => { const v = inp.value.trim(); if (v) { cur.name = v; saveProfiles(); } renderWho(false); };
+    $('#who-save').addEventListener('click', done);
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') done(); if (e.key === 'Escape') renderWho(false); });
+    return;
+  }
+  box.innerHTML = `<label for="who-sel">Learning as</label><select id="who-sel">${profiles.list.map(p => `<option value="${p.id}"${p.id === profiles.current ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select><button class="btn small ghost" type="button" id="who-rename">Rename</button>`;
+  $('#who-sel').addEventListener('change', e => switchLearner(e.target.value));
+  $('#who-rename').addEventListener('click', () => renderWho(true));
+}
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const KW = new Set(('SELECT FROM WHERE AND OR NOT IN IS NULL AS ON JOIN LEFT RIGHT INNER OUTER FULL CROSS GROUP BY ORDER HAVING LIMIT OFFSET DISTINCT UNION ALL INTERSECT EXCEPT WITH RECURSIVE CASE WHEN THEN ELSE END INSERT INTO VALUES UPDATE SET DELETE CREATE TABLE VIEW INDEX DROP ALTER ADD COLUMN RENAME TO PRIMARY KEY FOREIGN REFERENCES UNIQUE DEFAULT CHECK CONSTRAINT BETWEEN LIKE ILIKE EXISTS ASC DESC OVER PARTITION BEGIN COMMIT ROLLBACK SAVEPOINT RELEASE TRANSACTION RETURNING CONFLICT DO NOTHING IF INTEGER TEXT REAL NUMERIC BOOLEAN DATE VARCHAR ROWS RANGE PRECEDING FOLLOWING UNBOUNDED CURRENT ROW NULLS FIRST LAST TRUE FALSE EXPLAIN QUERY PLAN EXCLUDED').split(' '));
+const FN = new Set('COUNT SUM AVG MIN MAX ROUND ABS UPPER LOWER LENGTH SUBSTR TRIM REPLACE COALESCE NULLIF CAST STRFTIME JULIANDAY ROW_NUMBER RANK DENSE_RANK LAG LEAD FIRST_VALUE LAST_VALUE NTILE GROUP_CONCAT IFNULL PRAGMA_TABLE_INFO PRAGMA_INDEX_INFO'.split(' '));
+function hl(src) {
+  return src.replace(/(--[^\n]*)|('(?:[^']|'')*'?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)|([&<>])/g, (m, c, s, n, w, e) => {
+    if (c) return '<span class="tk-com">' + esc(c) + '</span>';
+    if (s) return '<span class="tk-str">' + esc(s) + '</span>';
+    if (n) return '<span class="tk-num">' + n + '</span>';
+    if (w) { const U = w.toUpperCase(); if (KW.has(U)) return '<span class="tk-kw">' + w + '</span>'; if (FN.has(U) || U === 'DATE' ) return '<span class="tk-fn">' + w + '</span>'; return w; }
+    return esc(e);
+  });
+}
+function tableHTML(set, opts = {}) {
+  if (!set) return '<p class="muted" style="font-size:14px">No rows returned.</p>';
+  const max = opts.max || 200, rows = set.values.slice(0, max);
+  const head = '<tr>' + set.columns.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>';
+  const body = rows.map((r, i) => `<tr${opts.bad === i ? ' class="diff"' : ''}>` + r.map(v => v === null ? '<td class="null">NULL</td>' : `<td${typeof v === 'number' ? ' class="num"' : ''}>${esc(typeof v === 'number' && !Number.isInteger(v) ? Math.round(v * 10000) / 10000 : v)}</td>`).join('') + '</tr>').join('');
+  const more = set.values.length > max ? `<p class="meta">Showing ${max} of ${set.values.length} rows.</p>` : '';
+  return `<div class="tscroll"><table class="rt"><thead>${head}</thead><tbody>${body}</tbody></table></div>${more}`;
+}
+function runResultHTML(r) {
+  if (!r.ok) return `<div class="err">${esc(r.error)}</div>`;
+  const s = lastSet(r);
+  if (!s) return `<p class="meta">Statement ran. Rows changed by the last statement: ${r.changed}.</p>`;
+  return `<p class="meta">${s.values.length} row${s.values.length === 1 ? '' : 's'}${r.sets.length > 1 ? ` · showing the last of ${r.sets.length} results` : ''}</p>` + tableHTML(s);
+}
+function schemaInfo(db) {
+  const r = runSql(db, "SELECT name FROM sqlite_master WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%' ORDER BY rowid");
+  const names = lastSet(r) ? lastSet(r).values.map(v => v[0]) : [];
+  return names.map(n => {
+    const c = lastSet(runSql(db, `SELECT name, pk FROM pragma_table_info('${n.replace(/'/g, "''")}')`));
+    return { name: n, cols: c ? c.values.map(v => ({ name: v[0], pk: v[1] > 0 })) : [] };
+  });
+}
+let SCHEMA = [];
+const colsHTML = t => t.cols.map(c => c.pk ? `<span class="k">${esc(c.name)}</span>` : esc(c.name)).join(', ');
+function solvedIn(t) { return t.problems.filter(p => store.solved[p.id]).length; }
+function readIn(t) { return t.lesson.filter((s, i) => store.read[t.id + ':' + i]).length; }
+const lessonDone = t => readIn(t) === t.lesson.length;
+const topicDone = t => lessonDone(t) && solvedIn(t) === t.problems.length;
+function nextUnsolved() { return PROBLEMS.find(p => !store.solved[p.id]); }
+
+/* ---------- editor ---------- */
+function editorHTML(id, value, placeholder) {
+  return `<div class="editor"><pre aria-hidden="true"><code id="${id}-hl"></code></pre><textarea id="${id}" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="SQL editor" placeholder="${esc(placeholder || '')}">${esc(value)}</textarea></div>`;
+}
+function bindEditor(id, { onRun, onSubmit, onChange }) {
+  const ta = document.getElementById(id), code = document.getElementById(id + '-hl'), pre = code.parentElement;
+  const paint = () => { code.innerHTML = hl(ta.value) + '\n'; };
+  const sync = () => { pre.scrollTop = ta.scrollTop; pre.scrollLeft = ta.scrollLeft; };
+  ta.addEventListener('input', () => { paint(); sync(); onChange && onChange(ta.value); });
+  ta.addEventListener('scroll', sync);
+  ta.addEventListener('keydown', e => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key === 'Enter') { e.preventDefault(); (e.shiftKey && onSubmit ? onSubmit : onRun)(); return; }
+    if (e.key === 'Tab' && !e.shiftKey) {
+      e.preventDefault();
+      const s = ta.selectionStart, en = ta.selectionEnd;
+      ta.setRangeText('  ', s, en, 'end'); ta.dispatchEvent(new Event('input'));
+    }
+  });
+  paint();
+  return ta;
+}
+
+/* ---------- views ---------- */
+let state = { view: 'home', topic: null, problem: null };
+function go(view, arg) {
+  state = { view, topic: view === 'topic' ? arg : null, problem: view === 'problem' ? arg : null };
+  const hash = view === 'home' ? '' : view === 'play' ? 'playground' : view === 'topic' ? 'topic-' + arg : 'problem-' + arg;
+  try { history.replaceState(null, '', hash ? '#' + hash : location.pathname + location.search); } catch (e) {}
+  render(); window.scrollTo(0, 0);
+}
+function fromHash() {
+  const h = (location.hash || '').slice(1);
+  if (h === 'playground') return ['play'];
+  if (h.startsWith('topic-') && TOPIC[h.slice(6)]) return ['topic', h.slice(6)];
+  if (h.startsWith('problem-') && PROB[h.slice(8)]) return ['problem', h.slice(8)];
+  return ['home'];
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-go]');
+  if (b) {
+    go(b.dataset.go, b.dataset.arg);
+    const sec = b.dataset.sec && document.getElementById('sec-' + b.dataset.sec);
+    if (sec && +b.dataset.sec > 0) sec.scrollIntoView({ block: 'start' });
+  }
+});
+
+function renderScore() {
+  const n = Object.keys(store.solved).filter(k => PROB[k]).length, total = PROBLEMS.length;
+  $('#score').innerHTML = `<span><b>${n}</b> / ${total} solved</span><span class="meter"><i style="width:${(100 * n / total).toFixed(1)}%"></i></span>`;
+  $('#nav-home').toggleAttribute('aria-current', false); $('#nav-play').toggleAttribute('aria-current', false);
+  if (state.view === 'play') $('#nav-play').setAttribute('aria-current', 'page');
+  else $('#nav-home').setAttribute('aria-current', 'page');
+}
+
+function render() {
+  renderScore();
+  if (engineError) { $('#app').innerHTML = `<div class="loading">The SQL engine could not load: ${esc(engineError)}. Check your connection and reload.</div>`; return; }
+  if (!SQL) return;
+  ({ home: renderHome, topic: renderTopic, problem: renderProblem, play: renderPlay })[state.view]();
+}
+
+function renderHome() {
+  const next = nextUnsolved();
+  const by = d => { const all = PROBLEMS.filter(p => p.diff === d); return [all.filter(p => store.solved[p.id]).length, all.length]; };
+  const color = { Easy: 'var(--easy)', Medium: 'var(--med)', Hard: 'var(--hard)' };
+  const n = Object.keys(store.solved).filter(k => PROB[k]).length;
+  $('#app').innerHTML = `
+  <section class="hero">
+    <div>
+      <div class="eyebrow">${TOPICS.length} topics · ${PROBLEMS.length} graded problems · runs in your browser</div>
+      <h1>Learn SQL one command at a time, from <span class="q">SELECT</span> to <span class="q">COMMIT</span>.</h1>
+      <p class="lede">Follow the roadmap top to bottom. Each topic has a short lesson with queries you can run, then problems on an ERP-style sales database. Write a query, run it, submit it.</p>
+      <div class="hero-actions">
+        ${next ? `<button class="btn primary" type="button" data-go="problem" data-arg="${next.id}">${n ? 'Continue' : 'Start'}: ${esc(next.title)} →</button>` : '<button class="btn primary" type="button" data-go="play">Every problem solved. Open the playground</button>'}
+        ${lessonButton()}
+      </div>
+    </div>
+    <div class="stats" aria-label="Progress">
+      <div class="stats-total"><b>${n}</b><span>of ${PROBLEMS.length} problems solved</span></div>
+      <div class="stat-row"><span class="pill Lesson">Lessons</span><span class="bar"><i style="width:${100 * TOPICS.filter(lessonDone).length / TOPICS.length}%;background:var(--accent)"></i></span><span>${TOPICS.filter(lessonDone).length} / ${TOPICS.length}</span></div>
+      ${['Easy', 'Medium', 'Hard'].map(d => { const [a, b] = by(d); return `<div class="stat-row"><span class="pill ${d}">${d}</span><span class="bar"><i style="width:${b ? 100 * a / b : 0}%;background:${color[d]}"></i></span><span>${a} / ${b}</span></div>`; }).join('')}
+    </div>
+  </section>
+  <section>
+    <div class="map-head"><h2>Roadmap</h2><p>Topics unlock nothing; the lines show what each one builds on.</p></div>
+    <div class="map" id="map">
+      <svg class="edges" id="edges" aria-hidden="true"></svg>
+      ${ROWS.map(r => `<div class="map-row">${r.map(id => {
+        const t = TOPIC[id], s = solvedIn(t), tot = t.problems.length, rd = readIn(t), ln = t.lesson.length;
+        return `<button type="button" class="node${topicDone(t) ? ' complete' : ''}" data-go="topic" data-arg="${id}" id="node-${id}">
+          <span class="node-top"><span class="node-num">${String(t.n).padStart(2, '0')}</span><span class="node-title">${esc(t.title)}</span></span>
+          <span class="node-cmds">${esc(t.cmds)}</span>
+          <span class="node-prog"><span class="lab">Lesson</span><span class="bar"><i style="width:${100 * rd / ln}%"></i></span>${rd === ln ? '<span class="tick">Read</span>' : rd + '/' + ln}</span>
+          <span class="node-prog"><span class="lab">Problems</span><span class="bar"><i style="width:${100 * s / tot}%"></i></span>${s}/${tot}</span>
+        </button>`; }).join('')}</div>`).join('')}
+    </div>
+  </section>`;
+  drawEdges();
+}
+function lessonButton() {
+  const t = TOPICS.find(x => !lessonDone(x));
+  if (!t) return '<button class="btn" type="button" data-go="topic" data-arg="select">All lessons read. Review them</button>';
+  const sec = t.lesson.findIndex((x, i) => !store.read[t.id + ':' + i]);
+  const started = TOPICS.some(x => readIn(x) > 0);
+  const label = started ? `Continue reading: ${t.title}${readIn(t) ? ` (${t.n}.${sec + 1})` : ''}` : `Read the first lesson: ${t.title}`;
+  return `<button class="btn" type="button" data-go="topic" data-arg="${t.id}" data-sec="${sec}">${esc(label)} →</button>`;
+}
+function drawEdges() {
+  const map = $('#map'), svg = $('#edges'); if (!map || !svg) return;
+  const box = map.getBoundingClientRect();
+  let d = '';
+  TOPICS.forEach(t => t.parents.forEach(pid => {
+    const a = $('#node-' + pid).getBoundingClientRect(), b = $('#node-' + t.id).getBoundingClientRect();
+    const x1 = a.left + a.width / 2 - box.left, y1 = a.bottom - box.top, x2 = b.left + b.width / 2 - box.left, y2 = b.top - box.top, my = (y1 + y2) / 2;
+    const done = topicDone(TOPIC[pid]);
+    d += `<path class="${done ? 'done' : ''}" d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}"/>`;
+  }));
+  svg.innerHTML = d;
+}
+window.addEventListener('resize', () => { if (state.view === 'home') drawEdges(); });
+
+function renderTopic() {
+  const t = TOPIC[state.topic], idx = TOPICS.indexOf(t), nextT = TOPICS[idx + 1];
+  $('#app').innerHTML = `
+  <div class="crumbs"><button type="button" data-go="home">Roadmap</button><span>/</span><span>${String(t.n).padStart(2, '0')} ${esc(t.title)}</span></div>
+  <header class="topic-head">
+    <div class="eyebrow">Topic ${t.n} of ${TOPICS.length} · ${esc(t.cmds)}</div>
+    <h1>${esc(t.title)}</h1>
+    <p>${t.summary}</p>
+  </header>
+  <div class="topic-grid">
+    ${lessonHTML(t, 'Edit in playground')}
+    <aside class="side">
+      <div class="card">
+        <div class="card-head"><h2>Lesson</h2><span class="lesson-prog">${readIn(t)} / ${t.lesson.length} sections read</span></div>
+        <div class="lesson-bar"><i class="lesson-fill" style="width:${100 * readIn(t) / t.lesson.length}%"></i></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Practice</h2><span>${solvedIn(t)} / ${t.problems.length} solved</span></div>
+        <ul class="plist">${t.problems.map(p => `<li><button type="button" data-go="problem" data-arg="${p.id}">
+          <span class="check${store.solved[p.id] ? ' on' : ''}" aria-label="${store.solved[p.id] ? 'Solved' : 'Not solved'}"></span>
+          <span class="t">${esc(p.title)}</span><span class="pill ${p.diff}">${p.diff}</span></button></li>`).join('')}</ul>
+      </div>
+      ${nextT ? `<button class="btn next-topic" type="button" data-go="topic" data-arg="${nextT.id}">Next topic: ${esc(nextT.title)} →</button>` : ''}
+    </aside>
+  </div>`;
+  bindLesson(t, code => { playCode = code; go('play'); });
+}
+
+/* The lesson is shared by the topic page and the Lesson tab of each problem. */
+const readBtn = (t, i) => { const on = !!store.read[t.id + ':' + i]; return `<button type="button" class="readbtn${on ? ' on' : ''}" data-read="${i}" aria-pressed="${on}"><span class="check${on ? ' on' : ''}"></span>${on ? 'Read' : 'Mark as read'}</button>`; };
+function lessonHTML(t, tryLabel) {
+  return `<article class="lesson">
+      ${t.lesson.map((s, i) => `<section class="sec" id="sec-${i}">
+        <div class="sec-head"><h3><span class="n">${t.n}.${i + 1}</span>${s.h}</h3>${readBtn(t, i)}</div>
+        <p>${s.p}</p>
+        ${s.list ? `<ul>${s.list.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
+        ${s.code ? `<div class="example"><pre><code>${hl(s.code)}</code></pre>
+          <div class="example-bar"><button class="btn small primary" type="button" data-ex="${i}">Run</button><button class="btn small ghost" type="button" data-try="${i}">${tryLabel}</button></div>
+          <div class="out" id="ex-out-${i}" hidden></div></div>` : ''}
+        ${s.pg ? `<div class="pg"><b>PostgreSQL</b>${s.pg}</div>` : ''}
+      </section>`).join('')}
+      <div class="lesson-end"><span class="lesson-prog">${readIn(t)} / ${t.lesson.length} sections read</span><button type="button" class="btn small" data-read-all>Mark whole lesson as read</button></div>
+    </article>`;
+}
+function bindLesson(t, onTry) {
+  $('#app').querySelectorAll('[data-ex]').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.ex, db = freshDb(), r = runSql(db, t.lesson[i].code); db.close();
+    const out = $('#ex-out-' + i); out.hidden = false; out.innerHTML = `<div class="results">${runResultHTML(r)}</div>`;
+  }));
+  $('#app').querySelectorAll('[data-try]').forEach(b => b.addEventListener('click', () => onTry(t.lesson[+b.dataset.try].code)));
+  const refresh = () => {
+    save();
+    $('#app').querySelectorAll('[data-read]').forEach(b => { b.outerHTML = readBtn(t, +b.dataset.read); });
+    $('#app').querySelectorAll('[data-read]').forEach(b => b.addEventListener('click', toggle));
+    const r = readIn(t), n = t.lesson.length;
+    $('#app').querySelectorAll('.lesson-prog').forEach(el => { el.textContent = `${r} / ${n} sections read`; });
+    $('#app').querySelectorAll('.lesson-fill').forEach(el => { el.style.width = (100 * r / n) + '%'; });
+    const tab = $('#tab-lesson-state'); if (tab) tab.textContent = r === n ? 'Read' : `${r}/${n}`;
+  };
+  function toggle(e) { const k = t.id + ':' + e.currentTarget.dataset.read; if (store.read[k]) delete store.read[k]; else store.read[k] = Date.now(); refresh(); }
+  $('#app').querySelectorAll('[data-read]').forEach(b => b.addEventListener('click', toggle));
+  $('#app').querySelectorAll('[data-read-all]').forEach(b => b.addEventListener('click', () => { t.lesson.forEach((x, i) => { store.read[t.id + ':' + i] = store.read[t.id + ':' + i] || Date.now(); }); refresh(); }));
+}
+
+let problemTab = 'problem';
+function renderProblem() {
+  const p = PROB[state.problem], t = TOPIC[p.topic], i = PROBLEMS.indexOf(p), prev = PROBLEMS[i - 1], next = PROBLEMS[i + 1];
+  const ref = reference(p), want = lastSet(ref);
+  const tables = SCHEMA.filter(s => p.tables.includes(s.name));
+  const starter = store.code[p.id] != null ? store.code[p.id] : (p.type === 'mutate' ? '-- write your statements here\n' : '-- write your query here\n');
+  $('#app').innerHTML = `
+  <div class="crumbs"><button type="button" data-go="home">Roadmap</button><span>/</span><button type="button" data-go="topic" data-arg="${t.id}">${esc(t.title)}</button><span>/</span><span>${esc(p.title)}</span></div>
+  <div class="ws-head">
+    <span class="check${store.solved[p.id] ? ' on' : ''}" id="ws-check"></span>
+    <h1>${esc(p.title)}</h1><span class="pill ${p.diff}">${p.diff}</span>
+    <span class="spacer"></span>
+    ${prev ? `<button class="btn small" type="button" data-go="problem" data-arg="${prev.id}" aria-label="Previous problem">← Prev</button>` : ''}
+    ${next ? `<button class="btn small" type="button" data-go="problem" data-arg="${next.id}" aria-label="Next problem">Next →</button>` : ''}
+  </div>
+  <div class="ws">
+    <section class="panel">
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" id="tab-problem" aria-selected="${problemTab === 'problem'}">Problem</button>
+        <button type="button" role="tab" id="tab-lesson" aria-selected="${problemTab === 'lesson'}">Lesson · ${esc(t.title)} <span class="tabstate" id="tab-lesson-state">${lessonDone(t) ? 'Read' : readIn(t) + '/' + t.lesson.length}</span></button>
+      </div>
+      <div id="pane-lesson" class="lesson-pane"${problemTab === 'lesson' ? '' : ' hidden'}>
+        <p class="muted" style="font-size:14px">The lesson for this topic. Run any example, or copy it into the editor to adapt it.</p>
+        ${lessonHTML(t, 'Copy to editor')}
+      </div>
+      <div id="pane-problem" class="pane"${problemTab === 'problem' ? '' : ' hidden'}>
+      <div class="stmt"><p>${p.prompt}</p>
+        <p class="muted" style="font-size:14px">${p.type === 'mutate' ? 'Your statements run on a fresh copy of the database, then the check query below is compared with the expected result.' : p.ordered ? 'Rows must come back in the order shown.' : 'Any row order is accepted. Column names are not checked unless the problem says so.'}</p>
+      </div>
+      ${tables.length ? `<div class="tables"><div class="subh">Tables<small>key column highlighted</small></div>${tables.map(s => `<div class="tbl"><b>${esc(s.name)}</b><div class="cols">${colsHTML(s)}</div></div>`).join('')}</div>` : ''}
+      ${p.check ? `<div class="tables"><div class="subh">Check query</div><details open><summary>Runs after your SQL</summary><div><pre><code>${hl(p.check)}</code></pre></div></details></div>` : ''}
+      <div class="tables"><div class="subh">Expected output<small>${want ? want.values.length + ' row' + (want.values.length === 1 ? '' : 's') : ''}</small></div>${tableHTML(want, { max: 50 })}</div>
+      <details><summary>Hint</summary><div><p>${esc(p.hint)}</p></div></details>
+      <details id="sol"><summary>Solution</summary><div><pre><code>${hl(p.solution)}</code></pre><div><button class="btn small" type="button" id="load-sol">Load into editor</button></div></div></details>
+      </div>
+    </section>
+    <section class="ide">
+      <div class="ide-box">
+        <div class="ide-bar"><span class="label">${p.type === 'mutate' ? 'statements' : 'query'}.sql · SQLite</span><button class="btn small ghost" type="button" id="reset-code">Reset</button></div>
+        ${editorHTML('ed', starter)}
+        <div class="ide-foot">
+          <span class="hint"><kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>Enter</kbd> run · add <kbd>Shift</kbd> to submit</span>
+          <button class="btn" type="button" id="run">Run</button>
+          <button class="btn primary" type="button" id="submit">Submit</button>
+        </div>
+      </div>
+      <div class="ide-box" id="out-box"><div class="results" id="out"><div class="verdict info"><b>Output</b><span>Run your SQL to see its result here, or submit it to be graded.</span></div></div></div>
+    </section>
+  </div>`;
+  const ta = bindEditor('ed', {
+    onRun: () => doRun(), onSubmit: () => doSubmit(),
+    onChange: v => { store.code[p.id] = v; save(); }
+  });
+  function doRun() {
+    const db = freshDb(); let r = runSql(db, ta.value);
+    let extra = '';
+    if (r.ok && p.type === 'mutate') { const c = runSql(db, p.check); extra = `<div class="subh">Check query on your database</div>` + runResultHTML(c); }
+    db.close();
+    $('#out').innerHTML = `<div class="subh">Your output</div>` + runResultHTML(r) + extra;
+  }
+  function doSubmit() {
+    const j = judge(p, ta.value);
+    if (j.pass && !store.solved[p.id]) { store.solved[p.id] = Date.now(); save(); renderScore(); $('#ws-check').classList.add('on'); }
+    const nextBtn = j.pass && next ? `<div><button class="btn small primary" type="button" data-go="problem" data-arg="${next.id}">Next problem: ${esc(next.title)} →</button></div>` : '';
+    $('#out').innerHTML = `<div class="verdict ${j.pass ? 'ok' : 'bad'}"><b>${j.title}</b><span>${esc(j.msg)}</span></div>${nextBtn}` +
+      (j.error ? '' : `<div class="compare"><div><div class="subh">Your output</div>${tableHTML(j.mine, { max: 50, bad: j.badRow })}</div><div><div class="subh">Expected</div>${tableHTML(j.want, { max: 50 })}</div></div>`);
+  }
+  $('#run').addEventListener('click', doRun);
+  $('#submit').addEventListener('click', doSubmit);
+  $('#reset-code').addEventListener('click', () => { ta.value = p.type === 'mutate' ? '-- write your statements here\n' : '-- write your query here\n'; ta.dispatchEvent(new Event('input')); ta.focus(); });
+  $('#load-sol').addEventListener('click', () => { ta.value = p.solution; ta.dispatchEvent(new Event('input')); ta.focus(); });
+  const showTab = name => {
+    problemTab = name;
+    $('#tab-problem').setAttribute('aria-selected', name === 'problem');
+    $('#tab-lesson').setAttribute('aria-selected', name === 'lesson');
+    $('#pane-problem').hidden = name !== 'problem';
+    $('#pane-lesson').hidden = name !== 'lesson';
+  };
+  $('#tab-problem').addEventListener('click', () => showTab('problem'));
+  $('#tab-lesson').addEventListener('click', () => showTab('lesson'));
+  bindLesson(t, code => { ta.value = code; ta.dispatchEvent(new Event('input')); ta.focus(); ta.scrollIntoView({ block: 'center', behavior: 'smooth' }); });
+}
+
+let playCode = "-- Try anything. Changes persist here until you reset the database.\nSELECT o.name, p.name AS customer, o.state\nFROM sale_order o\nJOIN res_partner p ON p.id = o.partner_id\nORDER BY o.date_order;";
+function renderPlay() {
+  if (!playDb) playDb = freshDb();
+  const sch = schemaInfo(playDb);
+  $('#app').innerHTML = `
+  <header class="topic-head"><div class="eyebrow">Free practice</div><h1>Playground</h1><p>A scratch copy of the course database. Run anything, including INSERT, DROP or CREATE. Click a table to preview it.</p></header>
+  <div class="play">
+    <aside class="schema">
+      <div class="subh">Schema<button class="btn small ghost" type="button" id="reset-db">Reset database</button></div>
+      ${sch.map(s => `<button type="button" class="tbl" data-table="${esc(s.name)}"><b>${esc(s.name)}</b><div class="cols">${colsHTML(s)}</div></button>`).join('')}
+    </aside>
+    <section class="ide">
+      <div class="ide-box">
+        <div class="ide-bar"><span class="label">playground.sql · SQLite</span></div>
+        ${editorHTML('play-ed', playCode)}
+        <div class="ide-foot"><span class="hint"><kbd>⌘</kbd>/<kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</span><button class="btn primary" type="button" id="play-run">Run</button></div>
+      </div>
+      <div class="ide-box"><div class="results" id="play-out"><div class="verdict info"><b>Output</b><span>Results appear here.</span></div></div></div>
+    </section>
+  </div>`;
+  const ta = bindEditor('play-ed', { onRun: run, onChange: v => { playCode = v; } });
+  function run() {
+    const r = runSql(playDb, ta.value);
+    $('#play-out').innerHTML = runResultHTML(r);
+    if (r.ok && /\b(CREATE|DROP|ALTER)\b/i.test(ta.value)) { const keep = $('#play-out').innerHTML; renderPlay(); $('#play-out').innerHTML = keep; }
+  }
+  $('#play-run').addEventListener('click', run);
+  $('#reset-db').addEventListener('click', () => { playDb.close(); playDb = freshDb(); renderPlay(); $('#play-out').innerHTML = '<div class="verdict info"><b>Database reset</b><span>Every table is back to its original rows.</span></div>'; });
+  $('#app').querySelectorAll('[data-table]').forEach(b => b.addEventListener('click', () => {
+    ta.value = `SELECT * FROM ${b.dataset.table} LIMIT 20;`; ta.dispatchEvent(new Event('input')); run();
+  }));
+}
+
+/* ---------- boot ---------- */
+renderWho(false);
+renderScore();
+if (typeof initSqlJs !== 'function') { engineError = 'script blocked'; render(); }
+else initSqlJs().then(S => {
+  SQL = S;
+  const db = new SQL.Database(); db.run(SEED); seedBytes = db.export(); SCHEMA = schemaInfo(db); db.close();
+  const [v, a] = fromHash(); state = { view: v, topic: v === 'topic' ? a : null, problem: v === 'problem' ? a : null };
+  render();
+}).catch(e => { engineError = String(e.message || e); render(); });
+</script>

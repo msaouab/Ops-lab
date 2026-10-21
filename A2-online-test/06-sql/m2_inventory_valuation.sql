@@ -1,0 +1,12 @@
+-- m2_inventory_valuation  ·  Mock 2 · Q3 · Medium
+--
+-- Inventory valuation for every product that has stock moves:
+-- - on_hand   = sum of all move quantities
+-- - avg_cost  = weighted average cost of RECEIPTS only (qty > 0): sum(qty * unit_cost) / sum(qty)
+-- - value     = on_hand * avg_cost
+-- Columns: product, on_hand, avg_cost, value (all numbers rounded to 2 decimals;
+-- round value from the unrounded avg_cost)
+-- Order: value DESC.
+--
+-- Tables: see schema.sql. Write your query below this line.
+

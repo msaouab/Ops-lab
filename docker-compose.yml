@@ -1,0 +1,16 @@
+# PostgreSQL for the SQL exercises (A2-online-test/06-sql).
+# Start: docker compose up -d db     Stop: docker compose down
+# The ERP framework server for stop A3 will be added here when we reach that stop.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ops_lab
+      POSTGRES_PASSWORD: ops_lab
+      POSTGRES_DB: ops_lab
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

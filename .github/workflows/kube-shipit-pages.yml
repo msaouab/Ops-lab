@@ -1,0 +1,37 @@
+# The "deploy to a PaaS" path, for contrast with Kubernetes: publish the
+# static frontend to GitHub Pages. No cluster, no images — push and it's live.
+# Open it as  https://<you>.github.io/ops-lab/?api=http://shipit-dev.localhost:8080
+#
+# One-time: Settings -> Pages -> Source: "GitHub Actions".
+name: ShipIt frontend to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - kube-lab/project-2-shipit/app/api/app/static/**
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: kube-lab/project-2-shipit/app/api/app/static
+      - id: deployment
+        uses: actions/deploy-pages@v4

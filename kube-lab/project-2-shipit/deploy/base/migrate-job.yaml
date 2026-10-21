@@ -1,0 +1,44 @@
+# Schema migration before the new pods roll out.
+#
+# Argo CD: a Sync hook in wave 1 — after the database (wave 0), before the
+# API and worker (wave 2). BeforeHookCreation deletes the old Job first,
+# because a Job's pod template is immutable.
+#
+# Plain kubectl: you must delete the old Job yourself before applying a new
+# image tag (`make shipit-local` does it) — try without and read the error.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: shipit-migrate
+  labels:
+    app.kubernetes.io/name: shipit-migrate
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: shipit-migrate
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: migrate
+          image: ghcr.io/msaouab/shipit-api
+          command: ["python", "-m", "app.migrate"]
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: shipit-db-app, key: uri }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }

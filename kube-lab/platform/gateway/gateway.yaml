@@ -1,0 +1,44 @@
+# One shared entry point for the whole cluster (Gateway API).
+#   GatewayClass = which implementation (Envoy Gateway)
+#   Gateway      = a listener: port 80, any *.localhost host
+#   HTTPRoute    = per-app routing, owned by each app's namespace
+# Platform team owns the Gateway; app teams own their routes. That role split
+# is the main design win over the old Ingress API.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: web
+  namespace: gateway
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+# http://grafana.localhost:8080  (admin / kubelab)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: web
+      namespace: gateway
+  hostnames:
+    - grafana.localhost
+  rules:
+    - backendRefs:
+        - name: monitoring-grafana
+          port: 80

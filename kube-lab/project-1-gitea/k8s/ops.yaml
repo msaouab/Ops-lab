@@ -1,0 +1,159 @@
+# Day-2 operations: backups, network isolation, least-privilege access.
+---
+# Nightly pg_dump into its own PVC, keeping the 7 newest dumps.
+# Note: this saves the database only. The Git repositories live on the
+# gitea-data PVC — exercise: back them up too (`gitea dump`).
+# Run one now:  kubectl -n gitea create job --from=cronjob/gitea-backup backup-now
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitea-backups
+  namespace: gitea
+  labels:
+    app.kubernetes.io/part-of: gitea
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: gitea-backup
+  namespace: gitea
+  labels:
+    app.kubernetes.io/part-of: gitea
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: gitea-backup
+            app.kubernetes.io/part-of: gitea
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsUser: 70
+            fsGroup: 70
+          containers:
+            - name: pg-dump
+              image: postgres:17-alpine
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  # A new pod's IP isn't allowed by the NetworkPolicy for its
+                  # first second or so: wait for Postgres instead of failing.
+                  for i in $(seq 1 30); do pg_isready -h postgres -t 2 -q && break; sleep 2; done
+                  f="/backups/gitea-$(date +%Y%m%d-%H%M%S).dump"
+                  pg_dump -h postgres -d gitea -Fc -f "$f"
+                  echo "wrote $f ($(du -h "$f" | cut -f1))"
+                  ls -1t /backups/*.dump | tail -n +8 | xargs -r rm -v
+              env:
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef: { name: gitea, key: db-username }
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef: { name: gitea, key: db-password }
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { memory: 256Mi }
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: gitea-backups
+---
+# Default: nothing may talk to pods in this namespace...
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: gitea
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress"]
+---
+# ...except Gitea's own pods may reach Postgres...
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-from-gitea
+  namespace: gitea
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: gitea
+      ports:
+        - port: 5432
+---
+# ...and the gateway's Envoy proxies may reach Gitea.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gitea-from-gateway
+  namespace: gitea
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: gitea
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: envoy-gateway-system
+      ports:
+        - port: 3000
+---
+# Read-only identity for a teammate / dashboard.
+# Test it: kubectl auth can-i delete pods -n gitea --as=system:serviceaccount:gitea:gitea-viewer
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitea-viewer
+  namespace: gitea
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: viewer
+  namespace: gitea
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "events", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps", "batch"]
+    resources: ["deployments", "statefulsets", "jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gitea-viewer
+  namespace: gitea
+subjects:
+  - kind: ServiceAccount
+    name: gitea-viewer
+    namespace: gitea
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: viewer

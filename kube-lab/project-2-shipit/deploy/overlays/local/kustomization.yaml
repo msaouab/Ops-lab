@@ -1,0 +1,26 @@
+# Environment: local — http://shipit-local.localhost:8080
+# For the inner loop before CI exists: `make shipit-local` builds the images,
+# imports them into k3d (no registry needed) and applies this overlay.
+# Not managed by Argo CD (excluded in argocd/apps/shipit.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: shipit-local
+resources:
+  - namespace.yaml
+  - ../../base
+images:
+  - name: ghcr.io/msaouab/shipit-api
+    newTag: local
+  - name: ghcr.io/msaouab/shipit-worker
+    newTag: local
+patches:
+  - target: { kind: HTTPRoute, name: api }
+    patch: |
+      - op: replace
+        path: /spec/hostnames/0
+        value: shipit-local.localhost
+  - target: { kind: HorizontalPodAutoscaler, name: api }
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 1

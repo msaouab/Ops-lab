@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ShipIt</title>
+  <style>
+    :root { --bg: #f7f7f5; --fg: #1d1d1b; --muted: #6b6b66; --card: #fff; --line: #e3e2dd; --accent: #2f6fde; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #161615; --fg: #ecebe7; --muted: #9b9a94; --card: #1f1f1d; --line: #33322f; --accent: #6b9cf0; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 system-ui, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 32px 16px; }
+    h1 { margin: 0 0 4px; font-size: 26px; }
+    .muted { color: var(--muted); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-top: 16px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    input { padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); width: 140px; }
+    button { padding: 8px 14px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+    code { font-size: 13px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>ShipIt</h1>
+  <p class="muted">Version <code id="version">…</code> served by pod <code id="pod">…</code></p>
+
+  <div class="card">
+    <div class="row">
+      <label for="rounds">Hash rounds</label>
+      <input id="rounds" type="number" value="200000" min="1" max="5000000">
+      <button id="submit">Queue job</button>
+      <span id="msg" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead><tr><th>#</th><th>Rounds</th><th>Status</th><th>Worker</th><th>Result</th></tr></thead>
+      <tbody id="jobs"></tbody>
+    </table>
+  </div>
+</main>
+<script>
+  // Same origin when served by the API; set ?api=http://shipit-dev.localhost:8080
+  // when this page is hosted elsewhere (GitHub Pages / Vercel).
+  const API = new URLSearchParams(location.search).get("api") || "";
+
+  async function refresh() {
+    try {
+      const info = await (await fetch(API + "/api/info")).json();
+      document.getElementById("version").textContent = info.version;
+      document.getElementById("pod").textContent = info.pod;
+      const jobs = await (await fetch(API + "/api/jobs")).json();
+      const tbody = document.getElementById("jobs");
+      tbody.replaceChildren(...jobs.map(j => {
+        const tr = document.createElement("tr");
+        for (const v of [j.id, j.rounds, j.status, j.worker || "", (j.result || "").slice(0, 16)]) {
+          const td = document.createElement("td");
+          td.textContent = v;
+          tr.append(td);
+        }
+        return tr;
+      }));
+    } catch (e) {
+      document.getElementById("msg").textContent = "API unreachable: " + e.message;
+    }
+  }
+
+  document.getElementById("submit").onclick = async () => {
+    const rounds = Number(document.getElementById("rounds").value);
+    const r = await fetch(API + "/api/jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rounds }),
+    });
+    document.getElementById("msg").textContent = r.ok ? "queued" : "error " + r.status;
+    refresh();
+  };
+
+  refresh();
+  setInterval(refresh, 2000);
+</script>
+</body>
+</html>

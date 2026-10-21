@@ -1,0 +1,37 @@
+# One Application per environment, generated from the folders under
+# kube-lab/project-2-shipit/deploy/overlays/ (except "local").
+# Add overlays/staging/ in Git -> shipit-staging appears. No clicking.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: shipit
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/msaouab/ops-lab.git
+        revision: main
+        directories:
+          - path: kube-lab/project-2-shipit/deploy/overlays/*
+          - path: kube-lab/project-2-shipit/deploy/overlays/local
+            exclude: true
+  template:
+    metadata:
+      name: "shipit-{{ .path.basename }}"
+      labels:
+        app.kubernetes.io/part-of: shipit
+        env: "{{ .path.basename }}"
+    spec:
+      project: apps
+      source:
+        repoURL: https://github.com/msaouab/ops-lab.git
+        targetRevision: main
+        path: "{{ .path.path }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "shipit-{{ .path.basename }}"
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [CreateNamespace=true]

@@ -1,0 +1,25 @@
+# PostgreSQL via the CloudNativePG operator (installed by platform/).
+# Compare with Project 1's hand-written StatefulSet: the operator handles
+# replication, failover, backups and credentials for you.
+#
+# CNPG creates for us:
+#   Secret  shipit-db-app  (keys: username, password, host, dbname, uri, ...)
+#   Service shipit-db-rw   (primary, read-write) / shipit-db-ro (replicas)
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: shipit-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  storage:
+    size: 1Gi
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 512Mi }

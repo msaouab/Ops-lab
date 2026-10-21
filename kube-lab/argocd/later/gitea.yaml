@@ -1,0 +1,20 @@
+# Project 1, Level 4: hand Gitea over to GitOps.
+# 1. Seal the secret (make gitea-seal) and list it in project-1-gitea/k8s/kustomization.yaml
+# 2. git mv argocd/later/gitea.yaml argocd/apps/gitea.yaml && commit && push
+# 3. Watch the root app pick it up. From now on, never kubectl apply Gitea again.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gitea
+  namespace: argocd
+spec:
+  project: apps
+  source:
+    repoURL: https://github.com/msaouab/ops-lab.git
+    targetRevision: main
+    path: kube-lab/project-1-gitea/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gitea
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }

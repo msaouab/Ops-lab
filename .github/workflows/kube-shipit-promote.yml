@@ -1,0 +1,60 @@
+# Promote an image that's already running in dev to prod — by pull request.
+# The PR review is the approval gate; merging it is the deployment.
+#
+# One-time repo setting: Settings -> Actions -> General ->
+#   "Allow GitHub Actions to create and approve pull requests".
+name: ShipIt promote to prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag to promote (empty = whatever dev runs now)
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: gitops-write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Resolve tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          tag="${INPUT_TAG:-$(yq '.images[0].newTag' kube-lab/project-2-shipit/deploy/overlays/dev/kustomization.yaml)}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Promoting $tag"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check the images exist
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          for c in api worker; do
+            docker buildx imagetools inspect "ghcr.io/${owner}/shipit-${c}:${{ steps.tag.outputs.tag }}" > /dev/null
+          done
+      - name: Open promotion PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          branch="promote/prod-${TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          yq -i "(.images[].newTag) = \"$TAG\"" kube-lab/project-2-shipit/deploy/overlays/prod/kustomization.yaml
+          git commit -am "deploy(shipit-prod): $TAG"
+          git push -u origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Promote ShipIt $TAG to prod" \
+            --body "Promotes \`$TAG\` (already verified in shipit-dev) to shipit-prod. Merge = deploy; revert = rollback."

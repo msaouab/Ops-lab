@@ -1,0 +1,28 @@
+# Local cluster: 1 control-plane (server) + 2 workers (agents).
+# Create:  k3d cluster create --config cluster/k3d.yaml
+# Delete:  k3d cluster delete kubelab
+#
+# Traefik (k3s default) is disabled: we install Envoy Gateway and use the
+# Gateway API instead — ingress-nginx was retired in March 2026 and Gateway API
+# is the recommended successor.
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: kubelab
+servers: 1
+agents: 2
+image: rancher/k3s:v1.36.5-k3s1
+ports:
+  # host:8080 -> k3d load balancer -> port 80 on the nodes (Envoy Gateway listener)
+  - port: 8080:80
+    nodeFilters:
+      - loadbalancer
+options:
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: true
