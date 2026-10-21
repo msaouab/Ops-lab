@@ -1,0 +1,47 @@
+# Ops Lab web app: type-check, test every exercise against its reference
+# solution, and build. The built site is kept as an artifact; publishing it
+# (GitHub Pages, then a container on kube-lab) comes in a later phase.
+name: App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - app/**
+      - A2-online-test/**   # the Algorithms track grades with these test files
+      - .github/workflows/app.yml
+  pull_request:
+    paths:
+      - app/**
+      - A2-online-test/**   # the Algorithms track grades with these test files
+      - .github/workflows/app.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npx vite build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ops-lab-app
+          path: app/dist
+          retention-days: 7

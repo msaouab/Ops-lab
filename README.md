@@ -9,6 +9,16 @@ My training ground, in one repo:
   ([route tracker](tracker/route-to-rnd.html))
 - **DevOps**: Kubernetes, Docker, GitHub Actions, Argo CD and GitOps in [`kube-lab/`](kube-lab)
 
+## The app
+
+An interactive app for everything above: runnable lessons and self-grading problems
+for SQL, algorithm patterns and DevOps (a simulated Kubernetes cluster, Docker, CI/CD,
+GitOps), in the browser. See [`app/README.md`](app/README.md).
+
+```bash
+cd app && npm ci && npm run dev
+```
+
 ## DevOps
 
 | Project | Folder | Covers |

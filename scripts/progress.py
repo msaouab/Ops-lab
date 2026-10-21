@@ -19,6 +19,7 @@ SECTIONS = [
     ("A2-online-test/05-dynamic-programming", "A2 · Dynamic programming"),
     ("A2-online-test/06-sql", "A2 · SQL"),
     ("A2-online-test/07-mock-tests", "A2 · Mock tests (algorithms)"),
+    ("A2-online-test/09-backtracking", "A2 · Backtracking"),
 ]
 
 

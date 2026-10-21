@@ -13,6 +13,7 @@ often one SQL question; then logic and English tests. Practise in **Python**.
 | `06-sql` | 15 queries + 3 mock queries on an ERP-shaped PostgreSQL database | 18 |
 | `07-mock-tests` | three timed 60-minute tests | 3 × 3 |
 | `08-aptitude-english-mcq` | 28-question aptitude set, client emails, web MCQ | — |
+| `09-backtracking` | subsets, permutations, combination sum (choose · explore · un-choose) | 3 |
 
 ## Suggested order
 
